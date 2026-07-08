@@ -1,17 +1,3 @@
-To fix this completely, **do not try to patch it.** Let's start with a perfectly clean slate. 
-
-Please go to your `index.html` file, **Select All (Ctrl+A / Cmd+A), Delete everything**, and paste in this complete, perfectly formatted code. 
-
-This version includes:
-1. The **Teacher Login / Quick Demo** screen.
-2. The **Lesson Objectives** field in the Builder.
-3. The secure, multiple-choice **Exit Ticket** in the generated student file.
-4. The **Exit Ticket Badge** in the Auto-Grader.
-5. Fully secured Firebase paths (so your data stays private to your login).
-
-Here is the complete, unbroken code:
-
-```html:Unified Teacher Hub:index.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,7 +23,7 @@ Here is the complete, unbroken code:
 
         /* Auth Styles */
         #authContainer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .auth-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .auth-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin: 20px;}
         .auth-card h2 { text-align: center; color: var(--dark); margin-bottom: 5px; font-size: 1.8rem; font-weight: 800;}
         .auth-card p { text-align: center; color: var(--primary); margin-bottom: 30px; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px;}
         .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
@@ -48,10 +34,11 @@ Here is the complete, unbroken code:
         #appContainer { display: none; width: 100%; height: 100vh; }
 
         /* Sidebar Navigation */
-        .sidebar { width: 300px; background: var(--dark); color: white; display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; }
-        .brand { padding: 20px; border-bottom: 1px solid #343a40; text-align: center; }
+        .sidebar { width: 300px; background: var(--dark); color: white; display: flex; flex-direction: column; z-index: 20; flex-shrink: 0; transition: left 0.3s ease; }
+        .brand { padding: 20px; border-bottom: 1px solid #343a40; text-align: center; position: relative;}
         .brand h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; }
         .brand p { font-size: 0.8rem; color: var(--primary); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+        .close-sidebar { display: none; position: absolute; top: 15px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
         
         .nav-section { padding: 20px; border-bottom: 1px solid #343a40; }
         .section-title { font-size: 0.75rem; text-transform: uppercase; color: #a0aec0; letter-spacing: 1px; margin-bottom: 10px; font-weight: 700; }
@@ -69,13 +56,16 @@ Here is the complete, unbroken code:
         .lesson-item.active { border-left-color: var(--accent); background: #4a5568; font-weight: bold; }
         .lesson-actions { display: flex; gap: 5px; opacity: 0; transition: 0.2s; }
         .lesson-item:hover .lesson-actions { opacity: 1; }
-        .icon-btn { background: transparent; border: none; color: #a0aec0; cursor: pointer; padding: 2px; font-size: 1rem;}
+        .icon-btn { background: transparent; border: none; color: #a0aec0; cursor: pointer; padding: 2px; font-size: 1.1rem;}
         .icon-btn:hover { color: white; }
 
         /* Main Content Area */
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); position: relative; }
+        .mobile-overlay { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 15; }
         
         header { background: var(--surface); padding: 20px 40px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .active-info { display: flex; align-items: center; gap: 15px; }
+        .mobile-menu-btn { display: none; background: transparent; border: none; font-size: 1.8rem; color: var(--dark); cursor: pointer; }
         .active-info h2 { font-size: 1.5rem; font-weight: 700; }
         .active-info p { font-size: 0.9rem; color: #718096; }
 
@@ -89,7 +79,9 @@ Here is the complete, unbroken code:
         .btn-danger:hover { background: #fca5a5; }
 
         /* View Switching Tabs */
-        .tab-bar { display: flex; background: #f1f5f9; padding: 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto;}
+        .tab-bar { display: flex; background: #f1f5f9; padding: 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; white-space: nowrap;}
+        .tab-bar::-webkit-scrollbar { height: 4px; }
+        .tab-bar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .tab-btn { padding: 10px 20px; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #64748b; border-radius: 6px; transition: 0.2s; white-space: nowrap;}
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
@@ -119,19 +111,18 @@ Here is the complete, unbroken code:
 
         /* Modals */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
-        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-top: 4px solid var(--primary); }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-top: 4px solid var(--primary); }
         .modal-content h3 { margin-bottom: 15px; font-size: 1.3rem; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top:15px; }
 
         /* Roster & Progression Views */
-        .roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; }
+        .roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
         .roster-card { background: white; padding: 25px; border-radius: 8px; border: 1px solid var(--border); }
         .student-chip { display: inline-flex; align-items: center; gap: 10px; background: #e2e8f0; color: var(--dark); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; margin: 4px; font-weight: 600; }
         .student-chip span.remove { cursor: pointer; color: var(--error); font-weight: bold; }
         .student-chip span.esis { color: #64748b; font-size: 0.75rem; border-right: 1px solid #cbd5e1; padding-right: 8px; }
         
         .progression-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
-        @media (max-width: 900px) { .progression-grid { grid-template-columns: 1fr; } }
         .student-list-item { padding: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .student-list-item:hover { background: #f1f5f9; }
         .student-list-item.active { border-color: var(--primary); background: #f0f9ff; font-weight: bold; }
@@ -158,7 +149,7 @@ Here is the complete, unbroken code:
         .drop-zone:hover { background: #f0f9ff; border-color: var(--accent); }
         #submissionsGrid { display: grid; grid-template-columns: 1fr; gap: 30px; }
         .submission-card { background: white; border-radius: 12px; border-left: 6px solid var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; overflow: hidden; transition: opacity 0.5s ease;}
-        .student-work { padding: 25px; flex: 1; min-width:300px; border-right: 1px solid var(--border); }
+        .student-work { padding: 25px; flex: 1; min-width: 300px; border-right: 1px solid var(--border); }
         .grading-panel { padding: 25px; width: 400px; flex-grow: 1; background: #fdfdfd; display: flex; flex-direction: column; }
         .evidence-img { max-width: 100%; border-radius: 6px; margin-top: 15px; border: 1px solid #ddd; display: block; }
         .section-label { font-size: 0.85rem; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; }
@@ -167,6 +158,23 @@ Here is the complete, unbroken code:
         .score-block { display: flex; flex-direction: column; align-items: center; }
         .score-block small { font-size: 0.75rem; color: #64748b; font-weight: bold; margin-bottom: 3px; text-transform: uppercase;}
         .ai-feedback-box { background: #eef2ff; border: 1px solid #c7d2fe; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; display: none; min-height: 100px;}
+
+        /* Mobile Responsiveness */
+        @media (max-width: 900px) {
+            .progression-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; height: 100vh; left: -100%; top: 0; bottom: 0; box-shadow: none; }
+            .sidebar.open { left: 0; box-shadow: 4px 0 25px rgba(0,0,0,0.5); }
+            .close-sidebar { display: block; }
+            .mobile-menu-btn { display: block; }
+            header { padding: 15px 20px; flex-direction: column; gap: 15px; align-items: stretch;}
+            .actions-bar { justify-content: space-between; }
+            .workspace { padding: 15px; }
+            .builder-container { padding: 1.5rem; }
+            .grading-panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+            .student-work { border-right: none; }
+        }
     </style>
 </head>
 <body>
@@ -192,10 +200,11 @@ Here is the complete, unbroken code:
     <!-- Main Application Container (Hidden until logged in) -->
     <div id="appContainer">
         <!-- Sidebar Navigation -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="brand">
                 <h1>Zayed City School</h1>
                 <p>Teacher Tracking Portal</p>
+                <button class="close-sidebar" onclick="window.toggleSidebar()">×</button>
             </div>
             
             <div class="nav-section">
@@ -228,17 +237,22 @@ Here is the complete, unbroken code:
             </div>
         </div>
 
+        <div class="mobile-overlay" id="mobileOverlay" onclick="window.toggleSidebar()"></div>
+
         <!-- Main Content Area -->
         <div class="main-content">
             <header>
                 <div class="active-info">
-                    <h2 id="activeLessonTitle">Global Overview</h2>
-                    <p><span id="currentPath">Select Class • Term • Week</span></p>
+                    <button class="mobile-menu-btn" onclick="window.toggleSidebar()">☰</button>
+                    <div>
+                        <h2 id="activeLessonTitle">Global Overview</h2>
+                        <p><span id="currentPath">Select Class • Term • Week</span></p>
+                    </div>
                 </div>
                 <div class="actions-bar">
-                    <input type="password" id="apiKeyInput" placeholder="Gemini API Key..." class="form-input" style="width:200px; margin:0;">
-                    <button class="btn btn-secondary" onclick="window.saveKey()">Save Key</button>
-                    <button class="btn btn-danger" onclick="window.logout()">Log Out</button>
+                    <input type="password" id="apiKeyInput" placeholder="Gemini API Key..." class="form-input" style="width:160px; margin:0; padding:8px;">
+                    <button class="btn btn-secondary" style="padding:8px 12px;" onclick="window.saveKey()">Save Key</button>
+                    <button class="btn btn-danger" style="padding:8px 12px;" onclick="window.logout()">Log Out</button>
                 </div>
             </header>
 
@@ -294,10 +308,11 @@ Here is the complete, unbroken code:
                     <div style="display:flex; gap:10px; margin-bottom:20px; justify-content:center;">
                         <input type="text" id="lessonIdInput" class="form-input" placeholder="Lesson ID (e.g., L1)" style="width:150px; text-align:center;">
                     </div>
-                    
-                    <div style="margin-bottom: 25px;">
-                        <label style="font-weight:700; color:var(--dark); display:block; margin-bottom:5px;">🎯 Lesson Objectives (Visible to students)</label>
-                        <textarea id="lessonObjectives" class="b-textarea" placeholder="By the end of this lesson, students will be able to..."></textarea>
+
+                    <!-- NEW: LESSON OBJECTIVES -->
+                    <div style="margin-bottom: 25px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <label style="font-weight:700; color:var(--dark); display:block; margin-bottom:5px;">🎯 Lesson Objectives (Visible to students & powers the Exit Ticket)</label>
+                        <textarea id="lessonObjectives" class="b-textarea" placeholder="By the end of this lesson, students will be able to..." style="min-height: 100px; margin-bottom: 0;"></textarea>
                     </div>
                     
                     <form id="lessonForm">
@@ -401,10 +416,10 @@ Here is the complete, unbroken code:
                 <div class="roster-grid">
                     <div class="roster-card">
                         <h3 style="margin-bottom:15px; border-bottom: 2px solid var(--border); padding-bottom: 10px;">Roster Configuration (ESIS Primary)</h3>
-                        <div style="display:flex; gap:10px; margin-bottom: 10px;">
-                            <input type="text" id="newStudentEsis" class="form-input" placeholder="ESIS ID" style="width:120px; margin:0;">
-                            <input type="text" id="newStudentName" class="form-input" placeholder="Full Student Name" style="flex:1; margin:0;">
-                            <button class="btn btn-primary" onclick="window.addStudentToRoster()">➕ Add 1</button>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom: 10px;">
+                            <input type="text" id="newStudentEsis" class="form-input" placeholder="ESIS ID" style="width:120px; flex-grow: 1; margin:0;">
+                            <input type="text" id="newStudentName" class="form-input" placeholder="Full Student Name" style="flex-grow: 2; margin:0;">
+                            <button class="btn btn-primary" style="flex-grow:1;" onclick="window.addStudentToRoster()">➕ Add 1</button>
                         </div>
                         <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
                             <p style="font-size:0.85rem; color:#64748b; margin-bottom: 10px;">Bulk Import from CSV (Format: ESIS, Name)</p>
@@ -468,6 +483,14 @@ Here is the complete, unbroken code:
         let unsubClasses = null, unsubLessons = null, unsubSubmissions = null;
         let lessonToCopyId = null;
 
+        // Mobile Sidebar Toggle
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        };
+
         // --- AUTHENTICATION LOGIC ---
         window.authMode = 'signin';
         window.toggleAuthMode = function(mode) {
@@ -518,14 +541,14 @@ Here is the complete, unbroken code:
                 window.currentUser = user;
                 document.getElementById('authContainer').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'flex';
-                initDataListeners(); // Initialize DB with user UID
+                initDataListeners(); // Initialize DB scoped to user UID
             } else {
                 window.currentUser = null;
                 document.getElementById('authContainer').style.display = 'flex';
                 document.getElementById('appContainer').style.display = 'none';
                 document.getElementById('authSubmitBtn').innerText = window.authMode === 'signin' ? 'Sign In' : 'Register New Account';
                 
-                // Clear listeners to prevent memory leaks
+                // Clear listeners on logout to prevent permission errors
                 if(unsubClasses) unsubClasses();
                 if(unsubLessons) unsubLessons();
                 if(unsubSubmissions) unsubSubmissions();
@@ -541,6 +564,10 @@ Here is the complete, unbroken code:
             if(viewId === 'progressionView') window.renderProgressionView();
             if(viewId === 'builderView') {
                 document.getElementById('builderContextWarning').innerText = `Class ${window.appState.classId} / Term ${window.appState.term} / Week ${window.appState.week}`;
+            }
+            // Auto-close sidebar on mobile after clicking a tab (optional quality of life)
+            if(window.innerWidth <= 768) {
+                // Not strictly necessary for tabs, but good for main nav if they were there
             }
         };
 
@@ -862,14 +889,14 @@ Here is the complete, unbroken code:
                 alert("DB Sync failed. Check console."); console.error(err); return;
             }
 
-            // 2. GENERATE HTML
+            // 2. GENERATE HTML (Strictly escaped)
             const studentTemplate = `
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${data.title}</title>
-<style>:root{--primary:#00a3e0;--accent:#ffbc3d;--bg:#f4f7f9;--surface:#ffffff;--text:#231f20;--border:#d1d5db;}body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;margin:0;padding:0;line-height:1.6;}.header{background:var(--surface);padding:2rem;text-align:center;border-bottom:5px solid var(--primary);margin-bottom:2rem;}.container{max-width:850px;margin:0 auto 3rem;}.objectives-box{background:#fdfdfd;padding:15px 20px;border-left:5px solid var(--primary);border-radius:0 8px 8px 0;margin-bottom:2rem;box-shadow:0 2px 4px rgba(0,0,0,0.02);}.section-card{background:var(--surface);padding:2.5rem;border-radius:12px;margin-bottom:1.5rem;border:1px solid var(--border);box-shadow:0 4px 6px rgba(0,0,0,0.05);}.main-heading{color:var(--text);font-size:1.6rem;margin-bottom:0.5rem;}.label{color:var(--primary);font-weight:800;display:block;margin-bottom:1rem;text-transform:uppercase;font-size:0.9rem;border-bottom:2px solid var(--accent);padding-bottom:5px;}.content-text{font-size:1.15rem;margin-bottom:1.5rem;white-space:pre-wrap;}textarea{width:100%;padding:1rem;border:1px solid var(--border);border-radius:8px;font-size:1rem;min-height:140px;background:#fafafa;outline:none;margin-top:10px;resize:vertical;}.eval-question-block{margin-top:1.5rem;padding-top:1.5rem;border-top:1px dashed var(--border);}.eval-question-text{font-weight:bold;color:var(--primary);margin-bottom:0.5rem;}.media-box{background:#e6f6fc;padding:2rem;border-radius:10px;border:2px dashed var(--primary);margin-top:2rem;text-align:center;}img,video{max-width:100%;border-radius:8px;border:1px solid var(--border);margin-top:10px;}.pin-gate{background:#fffcf0;border:1px solid var(--accent);text-align:center;}.submit-btn{background:var(--primary);color:white;border:none;padding:1.5rem;width:100%;font-size:1.3rem;font-weight:800;cursor:pointer;border-radius:12px;margin-top:1rem;border-bottom:5px solid #0076a3;}.hidden-section{display:none;}.student-inputs{display:flex;gap:15px;justify-content:center;margin-top:15px;}</style></head>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${data.title}</title>
+<style>:root{--primary:#00a3e0;--accent:#ffbc3d;--bg:#f4f7f9;--surface:#ffffff;--text:#231f20;--border:#d1d5db;}body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;margin:0;padding:0;line-height:1.6;}.header{background:var(--surface);padding:2rem;text-align:center;border-bottom:5px solid var(--primary);margin-bottom:2rem;}.container{max-width:850px;margin:0 auto 3rem; padding: 0 15px;}.objectives-box{background:#fdfdfd;padding:15px 20px;border-left:5px solid var(--primary);border-radius:0 8px 8px 0;margin-bottom:2rem;box-shadow:0 2px 4px rgba(0,0,0,0.02);}.section-card{background:var(--surface);padding:2.5rem;border-radius:12px;margin-bottom:1.5rem;border:1px solid var(--border);box-shadow:0 4px 6px rgba(0,0,0,0.05);}.main-heading{color:var(--text);font-size:1.6rem;margin-bottom:0.5rem;}.label{color:var(--primary);font-weight:800;display:block;margin-bottom:1rem;text-transform:uppercase;font-size:0.9rem;border-bottom:2px solid var(--accent);padding-bottom:5px;}.content-text{font-size:1.15rem;margin-bottom:1.5rem;white-space:pre-wrap;}textarea{width:100%;padding:1rem;border:1px solid var(--border);border-radius:8px;font-size:1rem;min-height:140px;background:#fafafa;outline:none;margin-top:10px;resize:vertical; box-sizing: border-box;}.eval-question-block{margin-top:1.5rem;padding-top:1.5rem;border-top:1px dashed var(--border);}.eval-question-text{font-weight:bold;color:var(--primary);margin-bottom:0.5rem;}.media-box{background:#e6f6fc;padding:2rem;border-radius:10px;border:2px dashed var(--primary);margin-top:2rem;text-align:center;}img,video{max-width:100%;border-radius:8px;border:1px solid var(--border);margin-top:10px;}.pin-gate{background:#fffcf0;border:1px solid var(--accent);text-align:center;}.submit-btn{background:var(--primary);color:white;border:none;padding:1.5rem;width:100%;font-size:1.3rem;font-weight:800;cursor:pointer;border-radius:12px;margin-top:1rem;border-bottom:5px solid #0076a3;}.hidden-section{display:none;}.student-inputs{display:flex;gap:15px;justify-content:center;margin-top:15px;} @media(max-width: 600px) { .student-inputs { flex-direction: column; } .student-inputs input { width: 100% !important; box-sizing: border-box; } .section-card { padding: 1.5rem; } }</style></head>
 <body><div class="header"><div style="font-weight:bold;opacity:0.6;">${data.school} • Class ${data.metadata.classId}</div><h1 style="color:var(--primary);">${data.title}</h1>
 <div class="student-inputs"><input type="text" id="studentEsis" placeholder="ESIS ID" style="padding:12px;width:150px;text-align:center;border:2px solid var(--accent);"><input type="text" id="studentName" placeholder="ENTER YOUR FULL NAME" style="padding:12px;width:300px;text-align:center;border:2px solid var(--accent);"></div></div>
 <div class="container">
-<div class="objectives-box"><strong style="color:var(--primary); font-size:1.1rem;">🎯 Today's Objectives:</strong><p style="margin-top:8px; white-space:pre-wrap; font-size:1.05rem;">${data.metadata.objectives}</p></div>
+<div class="objectives-box"><strong style="color:var(--primary); font-size:1.1rem;">🎯 Today's Objectives:</strong><p style="margin-top:8px; white-space:pre-wrap; font-size:1.05rem;">${data.metadata.objectives.replace(/\n/g, '<br>')}</p></div>
 <div class="section-card"><h2 class="main-heading">${data.sections.engage.heading}</h2><span class="label">${data.sections.engage.label}</span><div class="content-text">${data.sections.engage.text}</div><div class="resources">${window.renderResStr(data.sections.engage.resources)}</div></div>
 <div class="section-card"><h2 class="main-heading">${data.sections.explore.heading}</h2><span class="label">${data.sections.explore.label}</span><div class="content-text">${data.sections.explore.text}</div><div class="resources">${window.renderResStr(data.sections.explore.resources)}</div><textarea id="ans-explore" placeholder="Type your findings..."></textarea></div>
 <div id="explain-locked" class="section-card pin-gate"><h3>🔒 Continue Lesson</h3><p>Enter the code from your teacher.</p><input type="text" id="pinInput" placeholder="PIN" style="padding:10px;width:100px;text-align:center;"><button onclick="checkPin()" style="padding:10px 20px;background:var(--primary);color:white;border:none;cursor:pointer;">Unlock</button></div>
@@ -1104,8 +1131,8 @@ const output={student:name,esis:esis,classId:"${data.metadata.classId}",lesson:"
             const expPct = Math.min(100, Math.round((s.pastedExp / s.totalExp) * 100)); const elaPct = Math.min(100, Math.round((s.pastedEla / s.totalEla) * 100)); const evaPct = Math.min(100, Math.round((s.pastedEva / s.totalEva) * 100));
             
             let wHTML = `${warningHTML}<div class="student-work">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <div><h3>${s.student} <span style="font-size:0.9rem; color:#666;">(${s.esis ? s.esis+' | ' : ''}${s.classId})</span></h3><p style="color:var(--primary); font-weight:600;">${s.lesson}</p></div>
+                <div style="display:flex; justify-content:space-between; align-items:start; flex-wrap: wrap; gap:10px;">
+                    <div><h3 style="margin-bottom:0px;">${s.student} <span style="font-size:0.9rem; color:#666;">(${s.esis ? s.esis+' | ' : ''}${s.classId})</span></h3><p style="color:var(--primary); font-weight:600; margin-bottom:10px;">${s.lesson}</p></div>
                     <span class="status-badge" style="background:${exitColor}15; color:${exitColor}; border:1px solid ${exitColor};">🎟️ ${exitTicket}</span>
                 </div>`;
             
@@ -1177,6 +1204,7 @@ Output ONLY raw JSON: { "feedbackHTML": "**Feedback:**...", "scores": { "engage"
             const sEva = d.maxMarks.evaluate > 0 ? parseFloat(document.getElementById('sc-eva-' + cardId).value) || 0 : 0;
 
             try {
+                // Determine target DB paths based on where the file says it belongs, NOT the sidebar (to prevent accidents)
                 const targetClassId = d.classId; const targetTerm = d.term; const targetWeek = d.week; const targetLessonId = d.lessonId;
                 
                 await addDoc(collection(db, "users", window.currentUser.uid, "submissions"), {
@@ -1186,6 +1214,7 @@ Output ONLY raw JSON: { "feedbackHTML": "**Feedback:**...", "scores": { "engage"
                 });
                 
                 btn.innerText = "✅ Synced to DB";
+                // THE DISCARD PROTOCOL (Memory Saver)
                 setTimeout(() => {
                     const cardElement = document.getElementById(`card-block-${cardId}`);
                     cardElement.style.opacity = "0";

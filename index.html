@@ -1,0 +1,1199 @@
+To fix this completely, **do not try to patch it.** Let's start with a perfectly clean slate. 
+
+Please go to your `index.html` file, **Select All (Ctrl+A / Cmd+A), Delete everything**, and paste in this complete, perfectly formatted code. 
+
+This version includes:
+1. The **Teacher Login / Quick Demo** screen.
+2. The **Lesson Objectives** field in the Builder.
+3. The secure, multiple-choice **Exit Ticket** in the generated student file.
+4. The **Exit Ticket Badge** in the Auto-Grader.
+5. Fully secured Firebase paths (so your data stays private to your login).
+
+Here is the complete, unbroken code:
+
+```html:Unified Teacher Hub:index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Hub - Zayed City School</title>
+    <style>
+        :root {
+            --primary: #00a3e0;
+            --primary-dark: #0076a3;
+            --accent: #ffbc3d;
+            --dark: #231f20;
+            --bg: #f4f7f9;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--dark); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Auth Styles */
+        #authContainer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--dark); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .auth-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .auth-card h2 { text-align: center; color: var(--dark); margin-bottom: 5px; font-size: 1.8rem; font-weight: 800;}
+        .auth-card p { text-align: center; color: var(--primary); margin-bottom: 30px; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px;}
+        .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+        .auth-tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-weight: bold; color: #64748b; transition: 0.2s; }
+        .auth-tab:hover { color: var(--primary); }
+        .auth-tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); margin-bottom: -2px; }
+        
+        #appContainer { display: none; width: 100%; height: 100vh; }
+
+        /* Sidebar Navigation */
+        .sidebar { width: 300px; background: var(--dark); color: white; display: flex; flex-direction: column; z-index: 10; flex-shrink: 0; }
+        .brand { padding: 20px; border-bottom: 1px solid #343a40; text-align: center; }
+        .brand h1 { font-size: 1.2rem; font-weight: 800; letter-spacing: 1px; }
+        .brand p { font-size: 0.8rem; color: var(--primary); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+        
+        .nav-section { padding: 20px; border-bottom: 1px solid #343a40; }
+        .section-title { font-size: 0.75rem; text-transform: uppercase; color: #a0aec0; letter-spacing: 1px; margin-bottom: 10px; font-weight: 700; }
+        
+        select, .btn-select, .form-input { width: 100%; padding: 10px; background: #2d3748; color: white; border: 1px solid #4a5568; border-radius: 6px; font-size: 0.95rem; outline: none; margin-bottom:10px; }
+        select { cursor: pointer; }
+        .form-input { background: white; color: var(--dark); border-color: var(--border); }
+        .form-input:focus { border-color: var(--primary); }
+        
+        .grid-selectors { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .lesson-list { flex: 1; overflow-y: auto; padding: 20px; }
+        .lesson-item { padding: 12px; background: #2d3748; border-radius: 6px; margin-bottom: 8px; cursor: pointer; font-size: 0.9rem; border-left: 3px solid transparent; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .lesson-item:hover { background: #4a5568; }
+        .lesson-item.active { border-left-color: var(--accent); background: #4a5568; font-weight: bold; }
+        .lesson-actions { display: flex; gap: 5px; opacity: 0; transition: 0.2s; }
+        .lesson-item:hover .lesson-actions { opacity: 1; }
+        .icon-btn { background: transparent; border: none; color: #a0aec0; cursor: pointer; padding: 2px; font-size: 1rem;}
+        .icon-btn:hover { color: white; }
+
+        /* Main Content Area */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+        
+        header { background: var(--surface); padding: 20px 40px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .active-info h2 { font-size: 1.5rem; font-weight: 700; }
+        .active-info p { font-size: 0.9rem; color: #718096; }
+
+        .actions-bar { display: flex; gap: 10px; align-items: center; }
+        .btn { padding: 10px 18px; border: none; border-radius: 6px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: #e2e8f0; color: var(--dark); }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-danger { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+        .btn-danger:hover { background: #fca5a5; }
+
+        /* View Switching Tabs */
+        .tab-bar { display: flex; background: #f1f5f9; padding: 5px; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto;}
+        .tab-btn { padding: 10px 20px; border: none; background: transparent; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #64748b; border-radius: 6px; transition: 0.2s; white-space: nowrap;}
+        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        /* Data Workspace */
+        .workspace { flex: 1; overflow-y: auto; padding: 30px; display: none; }
+        .workspace.active { display: block; }
+        
+        /* Stats Counters */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--surface); padding: 20px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .stat-card p { font-size: 0.85rem; text-transform: uppercase; color: #718096; font-weight: bold; }
+        .stat-card h3 { font-size: 1.8rem; font-weight: 700; margin-top: 5px; }
+
+        /* Tables */
+        .table-container { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 700px;}
+        th { background: #f8fafc; padding: 15px 20px; font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700; border-bottom: 1px solid var(--border); white-space: nowrap;}
+        td { padding: 15px 20px; font-size: 0.95rem; border-bottom: 1px solid var(--border); }
+        tr:hover td { background: #f8fafc; }
+        .score-col { font-weight: 600; text-align: center; width: 100px; }
+        .max-label { font-size: 0.75rem; color: #94a3b8; font-weight: normal; }
+        
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
+        .status-graded { background: #dcfce7; color: var(--success); }
+        .status-pending { background: #fef3c7; color: var(--warning); }
+        .status-error { background: #fee2e2; color: var(--error); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border-top: 4px solid var(--primary); }
+        .modal-content h3 { margin-bottom: 15px; font-size: 1.3rem; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top:15px; }
+
+        /* Roster & Progression Views */
+        .roster-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; }
+        .roster-card { background: white; padding: 25px; border-radius: 8px; border: 1px solid var(--border); }
+        .student-chip { display: inline-flex; align-items: center; gap: 10px; background: #e2e8f0; color: var(--dark); padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; margin: 4px; font-weight: 600; }
+        .student-chip span.remove { cursor: pointer; color: var(--error); font-weight: bold; }
+        .student-chip span.esis { color: #64748b; font-size: 0.75rem; border-right: 1px solid #cbd5e1; padding-right: 8px; }
+        
+        .progression-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; }
+        @media (max-width: 900px) { .progression-grid { grid-template-columns: 1fr; } }
+        .student-list-item { padding: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .student-list-item:hover { background: #f1f5f9; }
+        .student-list-item.active { border-color: var(--primary); background: #f0f9ff; font-weight: bold; }
+
+        /* BUILDER STYLES */
+        .builder-container { max-width: 900px; margin: 0 auto; background: var(--surface); padding: 2.5rem; border-radius: 12px; border: 1px solid var(--border); }
+        .lesson-input-main { font-size: 2rem; font-weight: 800; text-align: center; border: none; border-bottom: 3px solid var(--accent); width: 100%; padding: 10px; outline: none; margin-bottom: 20px;}
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin: 2rem 0 1rem; background: #e6f6fc; padding: 0.75rem 1rem; border-left: 5px solid var(--primary); border-bottom: 2px solid var(--accent); border-radius: 4px; }
+        .header-input { font-size: 1.2rem; font-weight: bold; color: var(--primary); border: 1px dashed transparent; background: transparent; width: 100%; outline: none; padding: 2px 5px; }
+        .header-input:focus { border-color: var(--accent); background: #fff; }
+        .marks-badge { display: flex; align-items: center; gap: 5px; font-size: 0.85rem; color: var(--dark); background: white; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); white-space: nowrap; }
+        .marks-input { width: 50px; border: none; border-bottom: 1px solid var(--border); text-align: center; outline: none; font-weight: bold; color: var(--primary); }
+        .editable-label { font-weight: 700; margin-bottom: 0.5rem; display: inline-block; outline: none; border: 1px dashed transparent; padding: 2px 5px; }
+        .editable-label:focus { border-color: var(--accent); background: #fffcf0; }
+        textarea.b-textarea { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; min-height: 80px; resize: vertical; margin-bottom:10px; font-family: sans-serif;}
+        .resource-manager { background: #fafafa; padding: 1rem; border-radius: 8px; border: 1px dashed var(--border); margin-top: 10px; }
+        .resource-item { background: white; padding: 1rem; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 0.75rem; position: relative; border-left: 4px solid var(--accent); }
+        .type-btn { padding: 0.4rem 0.8rem; font-size: 0.8rem; border: 1px solid var(--border); background: white; cursor: pointer; border-radius: 4px; font-weight: 600; margin-right: 5px; }
+        .type-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .btn-remove { position: absolute; top: 10px; right: 10px; background: #fee2e2; color: #dc2626; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; }
+
+        /* GRADER STYLES */
+        .drop-zone { background: white; border: 3px dashed var(--primary); border-radius: 15px; padding: 40px; text-align: center; cursor: pointer; transition: 0.3s; margin-bottom: 30px; }
+        .drop-zone:hover { background: #f0f9ff; border-color: var(--accent); }
+        #submissionsGrid { display: grid; grid-template-columns: 1fr; gap: 30px; }
+        .submission-card { background: white; border-radius: 12px; border-left: 6px solid var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; overflow: hidden; transition: opacity 0.5s ease;}
+        .student-work { padding: 25px; flex: 1; min-width:300px; border-right: 1px solid var(--border); }
+        .grading-panel { padding: 25px; width: 400px; flex-grow: 1; background: #fdfdfd; display: flex; flex-direction: column; }
+        .evidence-img { max-width: 100%; border-radius: 6px; margin-top: 15px; border: 1px solid #ddd; display: block; }
+        .section-label { font-size: 0.85rem; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-top: 15px; margin-bottom: 5px; }
+        .answer-box { background: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 0.95rem; white-space: pre-wrap; line-height: 1.4; }
+        .score-input-grade { width: 60px; padding: 8px; font-size: 1rem; text-align: center; border: 2px solid var(--accent); border-radius: 6px; font-weight: bold; color: var(--primary);}
+        .score-block { display: flex; flex-direction: column; align-items: center; }
+        .score-block small { font-size: 0.75rem; color: #64748b; font-weight: bold; margin-bottom: 3px; text-transform: uppercase;}
+        .ai-feedback-box { background: #eef2ff; border: 1px solid #c7d2fe; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; display: none; min-height: 100px;}
+    </style>
+</head>
+<body>
+
+    <!-- Authentication Screen -->
+    <div id="authContainer">
+        <div class="auth-card">
+            <h2>Zayed City School</h2>
+            <p>TEACHER TRACKING PORTAL</p>
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="tabSignIn" onclick="window.toggleAuthMode('signin')">Sign In</div>
+                <div class="auth-tab" id="tabRegister" onclick="window.toggleAuthMode('register')">Register</div>
+            </div>
+            <div style="color:var(--error); font-size:0.85rem; text-align:center; margin-bottom:10px; display:none;" id="authError"></div>
+            <input type="email" id="authEmail" class="form-input" placeholder="EMAIL ADDRESS">
+            <input type="password" id="authPassword" class="form-input" placeholder="PASSWORD">
+            <button class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; margin-top:10px; font-size:1rem;" id="authSubmitBtn" onclick="window.handleAuth()">Sign In</button>
+            <div style="text-align:center; margin: 15px 0; color:#cbd5e1; font-size:0.85rem; font-weight:bold;">OR</div>
+            <button class="btn btn-secondary" style="width:100%; justify-content:center; background:#f8fafc; border:1px solid var(--border);" onclick="window.handleDemoAuth()">⚡ Quick Demo Access</button>
+        </div>
+    </div>
+
+    <!-- Main Application Container (Hidden until logged in) -->
+    <div id="appContainer">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="brand">
+                <h1>Zayed City School</h1>
+                <p>Teacher Tracking Portal</p>
+            </div>
+            
+            <div class="nav-section">
+                <div class="section-title">Global Context</div>
+                <select id="classSelect">
+                    <option value="">No Classes Found</option>
+                </select>
+                
+                <div class="grid-selectors">
+                    <select id="termSelect">
+                        <option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option>
+                    </select>
+                    <select id="weekSelect">
+                        <option value="1">Week 1</option><option value="2">Week 2</option>
+                        <option value="3">Week 3</option><option value="4">Week 4</option>
+                        <option value="5">Week 5</option><option value="6">Week 6</option>
+                        <option value="7">Week 7</option><option value="8">Week 8</option>
+                        <option value="9">Week 9</option><option value="10">Week 10</option>
+                        <option value="11">Week 11</option><option value="12">Week 12</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="lesson-list">
+                <div class="section-title">Lessons Configuration</div>
+                <div id="lessonItemsContainer">
+                    <div style="font-size: 0.85rem; opacity: 0.6; text-align: center; margin-top: 10px;">Select a class first.</div>
+                </div>
+                <button class="btn btn-secondary" style="width:100%; margin-top:15px; background:#4a5568; color:white; justify-content: center;" onclick="window.switchView('builderView', document.getElementById('tabBuilder'))">➕ Create New Lesson</button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <header>
+                <div class="active-info">
+                    <h2 id="activeLessonTitle">Global Overview</h2>
+                    <p><span id="currentPath">Select Class • Term • Week</span></p>
+                </div>
+                <div class="actions-bar">
+                    <input type="password" id="apiKeyInput" placeholder="Gemini API Key..." class="form-input" style="width:200px; margin:0;">
+                    <button class="btn btn-secondary" onclick="window.saveKey()">Save Key</button>
+                    <button class="btn btn-danger" onclick="window.logout()">Log Out</button>
+                </div>
+            </header>
+
+            <div class="tab-bar">
+                <button class="tab-btn active" id="tabDashboard" onclick="switchView('gradebookView', this)">📊 Gradebook</button>
+                <button class="tab-btn" id="tabGrader" onclick="switchView('graderView', this)">🤖 Auto-Grader</button>
+                <button class="tab-btn" id="tabBuilder" onclick="switchView('builderView', this)">🛠️ Lesson Builder</button>
+                <button class="tab-btn" id="tabProgression" onclick="switchView('progressionView', this)">📈 Analytics</button>
+                <button class="tab-btn" id="tabManager" onclick="switchView('classManagerView', this)">⚙️ Class Manager</button>
+            </div>
+
+            <!-- VIEW 1: GRADEBOOK VIEW -->
+            <div id="gradebookView" class="workspace active">
+                <div class="stats-grid">
+                    <div class="stat-card"><p>Class Size</p><h3 id="statClassSize">0</h3></div>
+                    <div class="stat-card"><p>Graded Progress</p><h3 style="color: var(--success);" id="statGradedProgress">0 / 0</h3></div>
+                    <div class="stat-card"><p>Class Average</p><h3 id="statAverage">0.0%</h3></div>
+                    <div class="stat-card"><p>Plagiarism Flags</p><h3 style="color: var(--error);" id="statPlagiarism">0</h3></div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+                    <button class="btn btn-secondary" onclick="window.exportToCSV()">📥 Export Term to CSV</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead id="gradebookHeader">
+                            <tr><th>Student Name</th><th>Status</th><th class="score-col">Total</th></tr>
+                        </thead>
+                        <tbody id="gradebookRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW 2: AUTO GRADER -->
+            <div id="graderView" class="workspace">
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <h2 style="color:var(--primary)">📥 Drop Student JSON Files Here</h2>
+                    <p style="color:#64748b; margin-top:5px;">Grades will be synced to the currently selected Term/Week/Lesson.</p>
+                    <input type="file" id="fileInput" multiple accept=".json" style="display:none" onchange="window.handleFiles(this.files)">
+                </div>
+                <div id="submissionsGrid"></div>
+            </div>
+
+            <!-- VIEW 3: LESSON BUILDER -->
+            <div id="builderView" class="workspace">
+                <div class="builder-container">
+                    <div style="text-align:center; margin-bottom: 20px;">
+                        <h2 style="color:var(--primary);">Lesson Blueprint</h2>
+                        <p style="color:#64748b; font-size:0.9rem;">Building this lesson configures the grading schema for <b id="builderContextWarning">the active Class/Term/Week.</b></p>
+                    </div>
+                    
+                    <input type="text" id="lessonTitle" class="lesson-input-main" placeholder="Lesson Title (e.g., Diode Circuit Design)">
+                    
+                    <div style="display:flex; gap:10px; margin-bottom:20px; justify-content:center;">
+                        <input type="text" id="lessonIdInput" class="form-input" placeholder="Lesson ID (e.g., L1)" style="width:150px; text-align:center;">
+                    </div>
+                    
+                    <div style="margin-bottom: 25px;">
+                        <label style="font-weight:700; color:var(--dark); display:block; margin-bottom:5px;">🎯 Lesson Objectives (Visible to students)</label>
+                        <textarea id="lessonObjectives" class="b-textarea" placeholder="By the end of this lesson, students will be able to..."></textarea>
+                    </div>
+                    
+                    <form id="lessonForm">
+                        <div id="sections-container">
+                            <!-- Engage -->
+                            <div class="section-group">
+                                <div class="section-header">
+                                    <input type="text" id="headEngage" class="header-input" value="1. Engage">
+                                    <div class="marks-badge">Max Marks: <input type="number" id="marksEngage" class="marks-input" value="0"></div>
+                                </div>
+                                <label class="editable-label" contenteditable="true" id="lblEngage">Scenario / Hook Text</label>
+                                <textarea id="engageText" class="b-textarea" placeholder="Hook the students..."></textarea>
+                                <div class="resource-manager"><div id="engageList"></div><button type="button" class="btn btn-secondary" style="width:100%;" onclick="window.addResource('engage')">+ Add Resource</button></div>
+                            </div>
+
+                            <!-- Explore -->
+                            <div class="section-group">
+                                <div class="section-header">
+                                    <input type="text" id="headExplore" class="header-input" value="2. Explore">
+                                    <div class="marks-badge">Max Marks: <input type="number" id="marksExplore" class="marks-input" value="10"></div>
+                                </div>
+                                <label class="editable-label" contenteditable="true" id="lblExplore">Task Instructions</label>
+                                <textarea id="explorePrompt" class="b-textarea" placeholder="Research task..."></textarea>
+                                <div class="resource-manager"><div id="exploreList"></div><button type="button" class="btn btn-secondary" style="width:100%;" onclick="window.addResource('explore')">+ Add Resource</button></div>
+                            </div>
+
+                            <!-- Explain -->
+                            <div class="section-group">
+                                <div class="section-header">
+                                    <input type="text" id="headExplain" class="header-input" value="3. Explain">
+                                </div>
+                                <div style="background:#fffcf0; padding:10px; border-radius:6px; border:1px solid var(--accent); margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+                                    <label style="font-weight:bold;">Content Unlock PIN:</label>
+                                    <input type="text" id="unlockCode" value="1234" style="width:80px; padding:5px; text-align:center;">
+                                </div>
+                                <label class="editable-label" contenteditable="true" id="lblExplain">Teacher's Explanation</label>
+                                <textarea id="explainContent" class="b-textarea" placeholder="Teacher notes..."></textarea>
+                                <div class="resource-manager"><div id="explainList"></div><button type="button" class="btn btn-secondary" style="width:100%;" onclick="window.addResource('explain')">+ Add Resource</button></div>
+                            </div>
+
+                            <!-- Elaborate -->
+                            <div class="section-group">
+                                <div class="section-header">
+                                    <input type="text" id="headElaborate" class="header-input" value="4. Elaborate">
+                                    <div class="marks-badge">Max Marks: <input type="number" id="marksElaborate" class="marks-input" value="15"></div>
+                                </div>
+                                <label class="editable-label" contenteditable="true" id="lblElaborate">Application Task</label>
+                                <textarea id="elaboratePrompt" class="b-textarea" placeholder="Project instructions..."></textarea>
+                                <div class="resource-manager"><div id="elaborateList"></div><button type="button" class="btn btn-secondary" style="width:100%;" onclick="window.addResource('elaborate')">+ Add Resource</button></div>
+                            </div>
+
+                            <!-- Evaluate -->
+                            <div class="section-group">
+                                <div class="section-header">
+                                    <input type="text" id="headEvaluate" class="header-input" value="5. Evaluate">
+                                    <div class="marks-badge">Max Marks: <input type="number" id="marksEvaluate" class="marks-input" value="10"></div>
+                                </div>
+                                <label class="editable-label" contenteditable="true" id="lblEvaluate">Reflection Questions</label>
+                                <div id="evalQsContainer"></div>
+                                <button type="button" class="btn btn-secondary" style="width:100%; color:var(--primary);" onclick="window.addEvalQuestion()">+ Add Question</button>
+                                <div class="resource-manager"><div id="evaluateList"></div><button type="button" class="btn btn-secondary" style="width:100%;" onclick="window.addResource('evaluate')">+ Add Resource</button></div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary" style="width:100%; margin-top:30px; font-size:1.2rem; padding:15px;" onclick="window.generateAndSyncLesson()">🚀 SYNC TO DB & DOWNLOAD STUDENT LESSON</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VIEW 4: PROGRESSION VIEW -->
+            <div id="progressionView" class="workspace">
+                <div class="progression-grid">
+                    <div>
+                        <div class="section-title">Select Student to Track</div>
+                        <div id="studentListContainer"></div>
+                    </div>
+                    <div>
+                        <div class="stat-card" style="margin-bottom: 20px;">
+                            <h4 style="font-size:1.1rem; font-weight:700; color:var(--primary);" id="analyticsStudentName">No Student Selected</h4>
+                            <p style="margin-top: 5px;" id="analyticsOverallBrief">Select a student from the sidebar to compile multi-week performance analysis.</p>
+                        </div>
+                        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 20px;">
+                            <div class="stat-card"><p>Participation Rate</p><h3 id="analyticsParticipation">-%</h3></div>
+                            <div class="stat-card"><p>Weak Phase Detected</p><h3 id="analyticsWeakestPhase" style="color:var(--error);">-</h3></div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr><th>Lesson Title</th><th class="score-col">ENG</th><th class="score-col">EXP</th><th class="score-col">ELAB</th><th class="score-col">EVAL</th><th class="score-col" style="background:#f1f5f9; color:var(--dark)">Score</th></tr>
+                                </thead>
+                                <tbody id="analyticsProgressRows">
+                                    <tr><td colspan="6" style="text-align:center;">Select a student to display metrics.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 5: CLASS MANAGER VIEW -->
+            <div id="classManagerView" class="workspace">
+                <div class="roster-grid">
+                    <div class="roster-card">
+                        <h3 style="margin-bottom:15px; border-bottom: 2px solid var(--border); padding-bottom: 10px;">Roster Configuration (ESIS Primary)</h3>
+                        <div style="display:flex; gap:10px; margin-bottom: 10px;">
+                            <input type="text" id="newStudentEsis" class="form-input" placeholder="ESIS ID" style="width:120px; margin:0;">
+                            <input type="text" id="newStudentName" class="form-input" placeholder="Full Student Name" style="flex:1; margin:0;">
+                            <button class="btn btn-primary" onclick="window.addStudentToRoster()">➕ Add 1</button>
+                        </div>
+                        <div style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+                            <p style="font-size:0.85rem; color:#64748b; margin-bottom: 10px;">Bulk Import from CSV (Format: ESIS, Name)</p>
+                            <div style="display:flex; gap:10px;">
+                                <input type="file" id="rosterCsvFile" accept=".csv" class="form-input" style="flex:1; margin:0; padding:5px;">
+                                <button class="btn btn-secondary" onclick="window.importRosterCSV()">📁 Upload CSV</button>
+                            </div>
+                        </div>
+                        <div id="rosterChipsContainer" style="margin-top: 20px;"></div>
+                    </div>
+                    
+                    <div class="roster-card">
+                        <h3 style="margin-bottom:15px; border-bottom: 2px solid var(--border); padding-bottom: 10px;">Setup Class</h3>
+                        <input type="text" id="newClassName" class="form-input" placeholder="Class ID (e.g. 9A)">
+                        <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="window.createNewClass()">Create New Class</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- End App Container -->
+
+    <!-- MODAL: COPY LESSON -->
+    <div id="copyModal" class="modal">
+        <div class="modal-content">
+            <h3>Duplicate Lesson Plan</h3>
+            <p style="font-size:0.85rem; color:#64748b; margin-bottom: 15px;">Copy this grading configuration to another class.</p>
+            <select id="targetClassSelect" class="form-input"></select>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="window.closeModal('copyModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="window.executeCopyLesson()">Confirm Copy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase System Integration & App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8rIrqQ7UFlWg69TW_TLsmJYX8QnrzoX4",
+            authDomain: "zcs-progress-tracker.firebaseapp.com",
+            projectId: "zcs-progress-tracker",
+            storageBucket: "zcs-progress-tracker.firebasestorage.app",
+            messagingSenderId: "192635882085",
+            appId: "1:192635882085:web:8ff379de57a525aac9148c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // GLOBAL APP STATE
+        window.appState = {
+            classes: [], roster: [], lessons: [], submissions: [],
+            classId: "", term: "1", week: "1", lessonId: ""
+        };
+
+        window.currentUser = null;
+        let unsubClasses = null, unsubLessons = null, unsubSubmissions = null;
+        let lessonToCopyId = null;
+
+        // --- AUTHENTICATION LOGIC ---
+        window.authMode = 'signin';
+        window.toggleAuthMode = function(mode) {
+            window.authMode = mode;
+            document.getElementById('tabSignIn').classList.toggle('active', mode === 'signin');
+            document.getElementById('tabRegister').classList.toggle('active', mode === 'register');
+            document.getElementById('authSubmitBtn').innerText = mode === 'signin' ? 'Sign In' : 'Register New Account';
+            document.getElementById('authError').style.display = 'none';
+        };
+
+        window.handleAuth = async function() {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const errDiv = document.getElementById('authError');
+            errDiv.style.display = 'none';
+            if(!email || !password) return errDiv.innerText = "Please enter email and password.", errDiv.style.display = 'block';
+            
+            document.getElementById('authSubmitBtn').innerText = "Loading...";
+            try {
+                if(window.authMode === 'signin') {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                }
+            } catch(err) {
+                errDiv.innerText = err.message;
+                errDiv.style.display = 'block';
+                document.getElementById('authSubmitBtn').innerText = window.authMode === 'signin' ? 'Sign In' : 'Register New Account';
+            }
+        };
+
+        window.handleDemoAuth = async function() {
+            try { await signInAnonymously(auth); } 
+            catch(err) { 
+                document.getElementById('authError').innerText = err.message; 
+                document.getElementById('authError').style.display = 'block'; 
+            }
+        };
+
+        window.logout = async function() {
+            if(confirm("Are you sure you want to log out?")) {
+                await signOut(auth);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if(user) {
+                window.currentUser = user;
+                document.getElementById('authContainer').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'flex';
+                initDataListeners(); // Initialize DB with user UID
+            } else {
+                window.currentUser = null;
+                document.getElementById('authContainer').style.display = 'flex';
+                document.getElementById('appContainer').style.display = 'none';
+                document.getElementById('authSubmitBtn').innerText = window.authMode === 'signin' ? 'Sign In' : 'Register New Account';
+                
+                // Clear listeners to prevent memory leaks
+                if(unsubClasses) unsubClasses();
+                if(unsubLessons) unsubLessons();
+                if(unsubSubmissions) unsubSubmissions();
+            }
+        });
+
+        // UI View Manager
+        window.switchView = function(viewId, btn) {
+            document.querySelectorAll('.workspace').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            btn.classList.add('active');
+            if(viewId === 'progressionView') window.renderProgressionView();
+            if(viewId === 'builderView') {
+                document.getElementById('builderContextWarning').innerText = `Class ${window.appState.classId} / Term ${window.appState.term} / Week ${window.appState.week}`;
+            }
+        };
+
+        window.openModal = function(id) { document.getElementById(id).style.display = 'flex'; };
+        window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if(savedKey) document.getElementById('apiKeyInput').value = savedKey;
+            window.addEvalQuestion();
+        });
+
+        // --- DATABASE LISTENERS (Secured by UID) ---
+        function initDataListeners() {
+            const uid = window.currentUser.uid;
+            
+            unsubClasses = onSnapshot(collection(db, `users/${uid}/classes`), (snapshot) => {
+                window.appState.classes = [];
+                snapshot.forEach(docSnap => window.appState.classes.push({ id: docSnap.id, ...docSnap.data() }));
+                renderClassSelectors();
+            });
+
+            unsubLessons = onSnapshot(collection(db, `users/${uid}/lessons`), (snapshot) => {
+                window.appState.lessons = [];
+                snapshot.forEach(docSnap => window.appState.lessons.push({ docId: docSnap.id, ...docSnap.data() }));
+                renderLessonItems();
+                renderGradebook();
+            });
+
+            unsubSubmissions = onSnapshot(collection(db, `users/${uid}/submissions`), (snapshot) => {
+                window.appState.submissions = [];
+                snapshot.forEach(docSnap => window.appState.submissions.push({ id: docSnap.id, ...docSnap.data() }));
+                renderGradebook();
+                if (document.getElementById('progressionView').classList.contains('active')) window.renderProgressionView();
+            });
+        }
+
+        window.saveKey = function() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if(key) { localStorage.setItem('gemini_api_key', key); alert("API Key saved."); }
+        };
+
+        // --- CONTEXT SELECTORS ---
+        function renderClassSelectors() {
+            const select = document.getElementById("classSelect");
+            const prevVal = select.value;
+            select.innerHTML = "";
+            
+            if (window.appState.classes.length === 0) {
+                select.innerHTML = '<option value="">No Classes Configured</option>';
+                return;
+            }
+
+            window.appState.classes.forEach(cls => {
+                const opt = document.createElement("option"); opt.value = cls.id; opt.innerText = "Class " + cls.id;
+                select.appendChild(opt);
+            });
+
+            if (prevVal && window.appState.classes.find(c => c.id === prevVal)) select.value = prevVal;
+            else select.selectedIndex = 0;
+            
+            updateGlobalContext();
+        }
+
+        function updateGlobalContext() {
+            window.appState.classId = document.getElementById("classSelect").value;
+            window.appState.term = document.getElementById("termSelect").value;
+            window.appState.week = document.getElementById("weekSelect").value;
+            
+            document.getElementById("currentPath").innerText = `Class ${window.appState.classId} • Term ${window.appState.term} • Week ${window.appState.week}`;
+            document.getElementById('builderContextWarning').innerText = `Class ${window.appState.classId} / Term ${window.appState.term} / Week ${window.appState.week}`;
+            
+            const currentClass = window.appState.classes.find(c => c.id === window.appState.classId);
+            window.appState.roster = currentClass ? (currentClass.students || []) : [];
+            
+            window.updateRosterView();
+            renderLessonItems();
+            renderGradebook();
+        }
+
+        document.getElementById("classSelect").addEventListener("change", updateGlobalContext);
+        document.getElementById("termSelect").addEventListener("change", updateGlobalContext);
+        document.getElementById("weekSelect").addEventListener("change", updateGlobalContext);
+
+        // --- CLASS MANAGER (ESIS Primary) ---
+        window.createNewClass = async function() {
+            const input = document.getElementById("newClassName");
+            const val = input.value.trim().toUpperCase();
+            if (!val) return alert("Enter class ID first.");
+            await setDoc(doc(db, "users", window.currentUser.uid, "classes", val), { name: val, students: [] });
+            input.value = ""; alert(`Class ${val} created!`);
+        };
+
+        window.updateRosterView = function() {
+            const container = document.getElementById("rosterChipsContainer");
+            container.innerHTML = "";
+            if(window.appState.roster.length === 0) {
+                container.innerHTML = `<p style="font-size:0.85rem; color:#64748b;">No students in this class.</p>`; return;
+            }
+            window.appState.roster.forEach((student, index) => {
+                const sName = typeof student === 'object' ? student.name : student;
+                const sEsis = typeof student === 'object' ? student.esis : "N/A";
+                const chip = document.createElement("div"); chip.className = "student-chip";
+                chip.innerHTML = `<span class="esis">${sEsis}</span> ${sName} <span class="remove" onclick="window.removeStudentFromRoster(${index})">✕</span>`;
+                container.appendChild(chip);
+            });
+        };
+
+        window.addStudentToRoster = async function() {
+            const esisInput = document.getElementById("newStudentEsis"); const nameInput = document.getElementById("newStudentName");
+            const esis = esisInput.value.trim(); const name = nameInput.value.trim();
+            if(!esis || !name) return alert("Provide ESIS and Name.");
+            if(!window.appState.classId) return alert("Select a class.");
+
+            const roster = window.appState.roster;
+            if(roster.some(s => (typeof s === 'object' ? s.esis : null) === esis)) return alert("ESIS already exists.");
+
+            roster.push({esis: esis, name: name});
+            roster.sort((a, b) => (typeof a === 'object' ? a.name : a).localeCompare((typeof b === 'object' ? b.name : b)));
+
+            await setDoc(doc(db, "users", window.currentUser.uid, "classes", window.appState.classId), { students: roster }, { merge: true });
+            esisInput.value = ""; nameInput.value = "";
+        };
+
+        window.importRosterCSV = function() {
+            const fileInput = document.getElementById("rosterCsvFile"); const file = fileInput.files[0];
+            if (!file) return alert("Select CSV."); if (!window.appState.classId) return alert("Select class.");
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const rows = e.target.result.split(/\r?\n/); let addedCount = 0; let roster = window.appState.roster;
+                rows.forEach(row => {
+                    const cols = row.split(',');
+                    if (cols.length >= 2) {
+                        const esis = cols[0].trim().replace(/['"]/g, ''); const name = cols[1].trim().replace(/['"]/g, '');
+                        if (esis && name && esis.toLowerCase() !== "esis") { 
+                            if (!roster.some(s => (typeof s === 'object' ? s.esis : null) === esis)) { roster.push({esis: esis, name: name}); addedCount++; }
+                        }
+                    }
+                });
+                if (addedCount > 0) {
+                    roster.sort((a, b) => (typeof a === 'object' ? a.name : a).localeCompare((typeof b === 'object' ? b.name : b)));
+                    await setDoc(doc(db, "users", window.currentUser.uid, "classes", window.appState.classId), { students: roster }, {merge:true});
+                    alert(`Imported ${addedCount} students.`); fileInput.value = "";
+                } else alert("No new valid students found.");
+            };
+            reader.readAsText(file);
+        };
+
+        window.removeStudentFromRoster = async function(index) {
+            if(!confirm("Remove student?")) return;
+            window.appState.roster.splice(index, 1);
+            await setDoc(doc(db, "users", window.currentUser.uid, "classes", window.appState.classId), { students: window.appState.roster }, {merge:true});
+        };
+
+        // --- LESSON CONFIG MANAGEMENT ---
+        function renderLessonItems() {
+            const container = document.getElementById("lessonItemsContainer"); container.innerHTML = "";
+            const activeLessons = window.appState.lessons.filter(l => l.classId === window.appState.classId && l.term === window.appState.term && l.week === window.appState.week);
+
+            if(activeLessons.length === 0) {
+                container.innerHTML = `<div style="font-size:0.85rem; opacity:0.6; text-align:center; margin-top:10px;">No lessons for this week.</div>`;
+                window.appState.lessonId = null; document.getElementById("activeLessonTitle").innerText = "No Lesson Selected";
+                return;
+            }
+
+            activeLessons.forEach((l, i) => {
+                const item = document.createElement("div");
+                item.className = "lesson-item" + (window.appState.lessonId === l.lessonId ? " active" : "");
+                item.innerHTML = `
+                    <div><b>Lesson ${l.lessonId}</b><div style="font-size:0.75rem; opacity:0.7; margin-top:2px;">${l.title}</div></div>
+                    <div class="lesson-actions">
+                        <button class="icon-btn" onclick="event.stopPropagation(); window.promptCopyLesson('${l.docId}')" title="Copy to Class">📋</button>
+                        <button class="icon-btn" onclick="event.stopPropagation(); window.deleteLesson('${l.docId}')" title="Delete">🗑️</button>
+                    </div>`;
+                item.onclick = () => {
+                    window.appState.lessonId = l.lessonId;
+                    document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active')); item.classList.add('active');
+                    document.getElementById("activeLessonTitle").innerText = `Lesson ${l.lessonId}: ${l.title}`;
+                    renderGradebook();
+                };
+                container.appendChild(item);
+                
+                if(i === 0 && !window.appState.lessonId) {
+                    window.appState.lessonId = l.lessonId; item.classList.add('active');
+                    document.getElementById("activeLessonTitle").innerText = `Lesson ${l.lessonId}: ${l.title}`;
+                }
+            });
+        }
+
+        window.deleteLesson = async function(docId) {
+            if(confirm("Permanently delete this lesson configuration from this class?")) {
+                await deleteDoc(doc(db, "users", window.currentUser.uid, "lessons", docId));
+            }
+        };
+
+        window.promptCopyLesson = function(docId) {
+            lessonToCopyId = docId;
+            const select = document.getElementById("targetClassSelect"); select.innerHTML = "";
+            window.appState.classes.forEach(c => {
+                if(c.id !== window.appState.classId) {
+                    const opt = document.createElement("option"); opt.value = c.id; opt.innerText = "Class " + c.id; select.appendChild(opt);
+                }
+            });
+            window.openModal('copyModal');
+        };
+
+        window.executeCopyLesson = async function() {
+            const targetClass = document.getElementById("targetClassSelect").value;
+            const sourceDoc = window.appState.lessons.find(l => l.docId === lessonToCopyId);
+            if(targetClass && sourceDoc) {
+                const newDocId = `${targetClass}_${sourceDoc.term}_${sourceDoc.week}_${sourceDoc.lessonId}`;
+                const newData = { ...sourceDoc }; delete newData.docId; newData.classId = targetClass; newData.timestamp = serverTimestamp();
+                await setDoc(doc(db, "users", window.currentUser.uid, "lessons", newDocId), newData);
+                alert("Lesson copied successfully!"); window.closeModal('copyModal');
+            }
+        };
+
+        function getSecName(sectionObj, fallback) {
+            if (!sectionObj || !sectionObj.heading) return fallback;
+            return sectionObj.heading.replace(/^\d+\.\s*/, '').split(' ')[0].substring(0, 12).toUpperCase();
+        }
+
+        // --- LESSON BUILDER ENGINE ---
+        window.lessonResources = { engage: [], explore: [], explain: [], elaborate: [], evaluate: [] };
+        
+        window.toggleQType = function(sel, id) { const opts = document.getElementById('q-opts-'+id); if(opts) opts.style.display = sel.value === 'mcq' ? 'block' : 'none'; }
+        
+        window.addEvalQuestion = function() {
+            const container = document.getElementById('evalQsContainer'); const id = Date.now();
+            const div = document.createElement('div'); div.style.cssText = 'background:#fdfdfd; border:1px solid var(--border); padding:10px; margin-bottom:10px; border-radius:6px; position:relative;'; div.className = 'eval-q-block';
+            div.innerHTML = `
+                <select class="q-type" onchange="window.toggleQType(this, ${id})" style="margin-bottom:5px; padding:5px; border-radius:4px; border:1px solid var(--border);">
+                    <option value="text">Short Answer</option><option value="tf">True / False</option><option value="mcq">Multiple Choice</option>
+                </select>
+                <button type="button" onclick="this.parentElement.remove()" style="position:absolute; right:10px; top:10px; background:#fee2e2; color:#dc2626; border:none; padding:2px 6px; border-radius:4px; cursor:pointer;">✕</button>
+                <textarea class="eval-q-text b-textarea" placeholder="Question prompt..." style="min-height:40px; margin-bottom:5px;"></textarea>
+                <div id="q-opts-${id}" style="display:none;"><input type="text" class="eval-q-options form-input" placeholder="Comma separated options"></div>
+            `;
+            container.appendChild(div);
+        };
+
+        window.addResource = function(section) {
+            const container = document.getElementById(`${section}List`); const id = Date.now();
+            window.lessonResources[section].push({ id, type: 'image', data: '', caption: '' });
+            const div = document.createElement('div'); div.className = 'resource-item'; div.id = `res-${id}`;
+            div.innerHTML = `
+                <div style="margin-bottom:8px;">
+                    <button type="button" class="type-btn active" onclick="window.setType(${id},'${section}','image', this)">Image</button>
+                    <button type="button" class="type-btn" onclick="window.setType(${id},'${section}','video', this)">Video</button>
+                    <button type="button" class="type-btn" onclick="window.setType(${id},'${section}','link', this)">Link</button>
+                </div>
+                <div id="input-cont-${id}"><input type="file" accept="image/*" onchange="window.handleBuilderFile(${id},'${section}',this)"></div>
+                <input type="text" class="form-input" placeholder="Caption" style="margin-top:5px; padding:5px;" onchange="window.updateCap(${id},'${section}',this.value)">
+                <button type="button" class="btn-remove" onclick="window.removeRes('${section}',${id})">✕</button>`;
+            container.appendChild(div);
+        };
+
+        window.setType = function(id, sec, type, btn) {
+            const item = window.lessonResources[sec].find(r => r.id === id); item.type = type;
+            const cont = document.getElementById(`input-cont-${id}`);
+            btn.parentElement.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+            cont.innerHTML = type === 'link' ? `<input type="text" class="form-input" placeholder="https://..." onchange="window.updateData(${id},'${sec}',this.value)">` : `<input type="file" accept="${type}/*" onchange="window.handleBuilderFile(${id},'${sec}',this)">`;
+        };
+
+        window.handleBuilderFile = async function(id, sec, el) {
+            const file = el.files[0]; if(!file) return; const reader = new FileReader();
+            reader.onload = (e) => { const item = window.lessonResources[sec].find(r => r.id === id); if (item) item.data = e.target.result; };
+            reader.readAsDataURL(file);
+        };
+        window.updateData = function(id, sec, val) { const res = window.lessonResources[sec].find(r => r.id === id); if(res) res.data = val; };
+        window.updateCap = function(id, sec, val) { const res = window.lessonResources[sec].find(r => r.id === id); if(res) res.caption = val; };
+        window.removeRes = function(sec, id) { document.getElementById(`res-${id}`).remove(); window.lessonResources[sec] = window.lessonResources[sec].filter(r => r.id !== id); };
+
+        window.generateAndSyncLesson = async function() {
+            if(!window.appState.classId) return alert("Select a Class from the sidebar first.");
+            const lessonId = document.getElementById('lessonIdInput').value.trim();
+            if(!lessonId) return alert("Please enter a Lesson ID (e.g. L1).");
+
+            const title = document.getElementById('lessonTitle').value || "Untitled Lesson";
+            const objectivesText = document.getElementById('lessonObjectives').value.trim();
+            
+            const evalQuestions = Array.from(document.querySelectorAll('.eval-q-block')).map(block => {
+                const type = block.querySelector('.q-type').value; const text = block.querySelector('.eval-q-text').value.trim();
+                const options = type === 'mcq' ? block.querySelector('.eval-q-options').value.split(',').map(s=>s.trim()).filter(s=>s!=="") : [];
+                return text ? { type, text, options } : null;
+            }).filter(q => q !== null);
+
+            const maxMarks = {
+                engage: parseInt(document.getElementById('marksEngage').value) || 0,
+                explore: parseInt(document.getElementById('marksExplore').value) || 0,
+                elaborate: parseInt(document.getElementById('marksElaborate').value) || 0,
+                evaluate: parseInt(document.getElementById('marksEvaluate').value) || 0
+            };
+            const sections = {
+                engage: { heading: document.getElementById('headEngage').value, label: document.getElementById('lblEngage').innerText, text: document.getElementById('engageText').value, resources: window.lessonResources.engage },
+                explore: { heading: document.getElementById('headExplore').value, label: document.getElementById('lblExplore').innerText, text: document.getElementById('explorePrompt').value, resources: window.lessonResources.explore },
+                explain: { heading: document.getElementById('headExplain').value, label: document.getElementById('lblExplain').innerText, text: document.getElementById('explainContent').value, resources: window.lessonResources.explain, pin: document.getElementById('unlockCode').value },
+                elaborate: { heading: document.getElementById('headElaborate').value, label: document.getElementById('lblElaborate').innerText, text: document.getElementById('elaboratePrompt').value, resources: window.lessonResources.elaborate },
+                evaluate: { heading: document.getElementById('headEvaluate').value, label: document.getElementById('lblEvaluate').innerText, questions: evalQuestions, resources: window.lessonResources.evaluate }
+            };
+
+            const data = {
+                title, school: "Zayed City School",
+                metadata: { classId: window.appState.classId, term: window.appState.term, week: window.appState.week, lessonId: lessonId, maxMarks: maxMarks, objectives: objectivesText },
+                sections: sections
+            };
+
+            // 1. DB SYNC
+            const docId = `${window.appState.classId}_${window.appState.term}_${window.appState.week}_${lessonId}`;
+            try {
+                await setDoc(doc(db, "users", window.currentUser.uid, "lessons", docId), {
+                    classId: window.appState.classId, term: window.appState.term, week: window.appState.week, lessonId: lessonId,
+                    title: title, maxMarks: maxMarks, objectives: objectivesText, sections: { engage:{heading:sections.engage.heading}, explore:{heading:sections.explore.heading}, elaborate:{heading:sections.elaborate.heading}, evaluate:{heading:sections.evaluate.heading} },
+                    timestamp: serverTimestamp()
+                });
+                alert("Database configured successfully! Downloading file...");
+            } catch(err) {
+                alert("DB Sync failed. Check console."); console.error(err); return;
+            }
+
+            // 2. GENERATE HTML
+            const studentTemplate = `
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${data.title}</title>
+<style>:root{--primary:#00a3e0;--accent:#ffbc3d;--bg:#f4f7f9;--surface:#ffffff;--text:#231f20;--border:#d1d5db;}body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;margin:0;padding:0;line-height:1.6;}.header{background:var(--surface);padding:2rem;text-align:center;border-bottom:5px solid var(--primary);margin-bottom:2rem;}.container{max-width:850px;margin:0 auto 3rem;}.objectives-box{background:#fdfdfd;padding:15px 20px;border-left:5px solid var(--primary);border-radius:0 8px 8px 0;margin-bottom:2rem;box-shadow:0 2px 4px rgba(0,0,0,0.02);}.section-card{background:var(--surface);padding:2.5rem;border-radius:12px;margin-bottom:1.5rem;border:1px solid var(--border);box-shadow:0 4px 6px rgba(0,0,0,0.05);}.main-heading{color:var(--text);font-size:1.6rem;margin-bottom:0.5rem;}.label{color:var(--primary);font-weight:800;display:block;margin-bottom:1rem;text-transform:uppercase;font-size:0.9rem;border-bottom:2px solid var(--accent);padding-bottom:5px;}.content-text{font-size:1.15rem;margin-bottom:1.5rem;white-space:pre-wrap;}textarea{width:100%;padding:1rem;border:1px solid var(--border);border-radius:8px;font-size:1rem;min-height:140px;background:#fafafa;outline:none;margin-top:10px;resize:vertical;}.eval-question-block{margin-top:1.5rem;padding-top:1.5rem;border-top:1px dashed var(--border);}.eval-question-text{font-weight:bold;color:var(--primary);margin-bottom:0.5rem;}.media-box{background:#e6f6fc;padding:2rem;border-radius:10px;border:2px dashed var(--primary);margin-top:2rem;text-align:center;}img,video{max-width:100%;border-radius:8px;border:1px solid var(--border);margin-top:10px;}.pin-gate{background:#fffcf0;border:1px solid var(--accent);text-align:center;}.submit-btn{background:var(--primary);color:white;border:none;padding:1.5rem;width:100%;font-size:1.3rem;font-weight:800;cursor:pointer;border-radius:12px;margin-top:1rem;border-bottom:5px solid #0076a3;}.hidden-section{display:none;}.student-inputs{display:flex;gap:15px;justify-content:center;margin-top:15px;}</style></head>
+<body><div class="header"><div style="font-weight:bold;opacity:0.6;">${data.school} • Class ${data.metadata.classId}</div><h1 style="color:var(--primary);">${data.title}</h1>
+<div class="student-inputs"><input type="text" id="studentEsis" placeholder="ESIS ID" style="padding:12px;width:150px;text-align:center;border:2px solid var(--accent);"><input type="text" id="studentName" placeholder="ENTER YOUR FULL NAME" style="padding:12px;width:300px;text-align:center;border:2px solid var(--accent);"></div></div>
+<div class="container">
+<div class="objectives-box"><strong style="color:var(--primary); font-size:1.1rem;">🎯 Today's Objectives:</strong><p style="margin-top:8px; white-space:pre-wrap; font-size:1.05rem;">${data.metadata.objectives}</p></div>
+<div class="section-card"><h2 class="main-heading">${data.sections.engage.heading}</h2><span class="label">${data.sections.engage.label}</span><div class="content-text">${data.sections.engage.text}</div><div class="resources">${window.renderResStr(data.sections.engage.resources)}</div></div>
+<div class="section-card"><h2 class="main-heading">${data.sections.explore.heading}</h2><span class="label">${data.sections.explore.label}</span><div class="content-text">${data.sections.explore.text}</div><div class="resources">${window.renderResStr(data.sections.explore.resources)}</div><textarea id="ans-explore" placeholder="Type your findings..."></textarea></div>
+<div id="explain-locked" class="section-card pin-gate"><h3>🔒 Continue Lesson</h3><p>Enter the code from your teacher.</p><input type="text" id="pinInput" placeholder="PIN" style="padding:10px;width:100px;text-align:center;"><button onclick="checkPin()" style="padding:10px 20px;background:var(--primary);color:white;border:none;cursor:pointer;">Unlock</button></div>
+<div id="content-to-reveal" class="hidden-section">
+<div class="section-card"><h2 class="main-heading">${data.sections.explain.heading}</h2><span class="label">${data.sections.explain.label}</span><div class="content-text">${data.sections.explain.text}</div><div class="resources">${window.renderResStr(data.sections.explain.resources)}</div></div>
+<div class="section-card"><h2 class="main-heading">${data.sections.elaborate.heading}</h2><span class="label">${data.sections.elaborate.label}</span><div class="content-text">${data.sections.elaborate.text}</div><div class="resources">${window.renderResStr(data.sections.elaborate.resources)}</div><textarea id="ans-elaborate" placeholder="Describe your solution..."></textarea><div class="media-box"><p style="font-weight:bold;color:var(--primary);">📤 UPLOAD PROJECT EVIDENCE</p><input type="file" id="elaborateMedia" accept="image/*,video/*" onchange="handleStudentMedia(this)"><div id="mediaPreview" style="margin-top:20px;"></div></div></div>
+<div class="section-card"><h2 class="main-heading">${data.sections.evaluate.heading}</h2><span class="label">${data.sections.evaluate.label}</span><div class="resources">${window.renderResStr(data.sections.evaluate.resources)}</div><div id="evaluate-questions-container"></div></div>
+<div class="section-card" style="border-top: 5px solid var(--accent); background:#fffcf0;"><h2 class="main-heading">🎟️ Exit Ticket: Self-Reflection</h2><p style="margin-bottom:15px; color:#555;">Review today's objectives above. How confident do you feel about your learning today?</p>
+<div style="background:#ffffff; padding:20px; border-radius:8px; border:1px solid var(--border);">
+<label style="display:block; margin-bottom:15px; cursor:pointer; font-size:1.1rem;"><input type="radio" name="exitTicket" value="Mastered" style="transform:scale(1.3); margin-right:10px;"> 🟩 <b>Mastered it:</b> I can easily explain these objectives to a friend.</label>
+<label style="display:block; margin-bottom:15px; cursor:pointer; font-size:1.1rem;"><input type="radio" name="exitTicket" value="Getting There" style="transform:scale(1.3); margin-right:10px;"> 🟨 <b>Getting there:</b> I understand the basics but need a little more practice.</label>
+<label style="display:block; cursor:pointer; font-size:1.1rem;"><input type="radio" name="exitTicket" value="Need Help" style="transform:scale(1.3); margin-right:10px;"> 🟦 <b>Beginning:</b> I am just starting to learn this and need more time.</label>
+</div></div>
+<button class="submit-btn" onclick="finalSubmit()">📥 FINALIZE & DOWNLOAD WORK</button>
+</div></div>
+<script>
+const PIN_CODE="${data.sections.explain.pin}"; const evalQuestions=${JSON.stringify(data.sections.evaluate.questions)}; let studentMedia=null; let pasteData={explore:0,elaborate:0,evaluate:0};
+const evalContainer=document.getElementById('evaluate-questions-container');evalQuestions.forEach((q,i)=>{let html='<div class="eval-question-block"><div class="eval-question-text">Q'+(i+1)+': '+q.text+'</div>';if(q.type==='text')html+='<textarea id="ans-evaluate-'+i+'"></textarea>';else if(q.type==='tf')html+='<label><input type="radio" name="ans-ev-'+i+'" value="True"> True</label><br><label><input type="radio" name="ans-ev-'+i+'" value="False"> False</label>';else if(q.type==='mcq')q.options.forEach(opt=>{html+='<label><input type="radio" name="ans-ev-'+i+'" value="'+opt+'"> '+opt+'</label><br>';});evalContainer.innerHTML+=html+'</div>';});
+function trackPaste(e,key){let pastedLen=0;const cb=e.clipboardData||window.clipboardData;if(cb){const text=cb.getData('text/plain')||cb.getData('text')||'';pastedLen=text.length;}if(pastedLen===0){const el=e.target;const beforeLen=el.value.length;setTimeout(()=>{const added=el.value.length-beforeLen;if(added>0)pasteData[key]+=added;},10);}else{pasteData[key]+=pastedLen;}}
+const ex=document.getElementById('ans-explore');const el=document.getElementById('ans-elaborate');if(ex)ex.addEventListener('paste',(e)=>trackPaste(e,'explore'));if(el)el.addEventListener('paste',(e)=>trackPaste(e,'elaborate'));document.querySelectorAll('textarea[id^="ans-evaluate-"]').forEach(ta=>{ta.addEventListener('paste',(e)=>trackPaste(e,'evaluate'));});
+function checkPin(){if(document.getElementById('pinInput').value===PIN_CODE){document.getElementById('explain-locked').style.display='none';document.getElementById('content-to-reveal').classList.remove('hidden-section');}else alert('Wrong PIN!');}
+function handleStudentMedia(el){const reader=new FileReader();reader.onload=(e)=>{studentMedia=e.target.result;document.getElementById('mediaPreview').innerHTML=el.files[0].type.startsWith('image')?'<img src="'+e.target.result+'" style="max-height:200px;">':'✅ Video Attached';};reader.readAsDataURL(el.files[0]);}
+function finalSubmit(){const esis=document.getElementById('studentEsis').value.trim();const name=document.getElementById('studentName').value.trim();if(!esis||!name)return alert("Enter ESIS ID and Name.");
+const exitTicket = (document.querySelector('input[name="exitTicket"]:checked') || {}).value || "Not Answered";
+let evalAnswers="";evalQuestions.forEach((q,i)=>{let ans=q.type==='text'?document.getElementById('ans-evaluate-'+i).value:(document.querySelector('input[name="ans-ev-'+i+'"]:checked')||{}).value;evalAnswers+="Q: "+q.text+"\\\\nAns: "+(ans||"None")+"\\\\n\\\\n";});
+const output={student:name,esis:esis,classId:"${data.metadata.classId}",lesson:"${data.title}",term:"${data.metadata.term}",week:"${data.metadata.week}",lessonId:"${data.metadata.lessonId}",maxMarks:${JSON.stringify(data.metadata.maxMarks)},sections:${JSON.stringify(data.sections)},answers:{explore:document.getElementById('ans-explore').value,elaborate:document.getElementById('ans-elaborate').value,elaborate_file:studentMedia,evaluate:evalAnswers,exitTicket:exitTicket},metadata:{pastedExploreChars:pasteData.explore,pastedElaborateChars:pasteData.elaborate,pastedEvaluateChars:pasteData.evaluate}};const blob=new Blob([JSON.stringify(output,null,2)],{type:"application/json"});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=esis+"_"+name.replace(/\\\\s+/g,'_')+"_Work.json";a.click();}
+<\/script></body></html>`;
+
+            const blob = new Blob([studentTemplate], { type: "text/html" });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+            link.download = `Lesson_${lessonId}_${window.appState.classId}.html`; link.click();
+        };
+
+        window.renderResStr = function(res) {
+            return res.map(r => {
+                if(r.type === 'image') return '<img src="'+r.data+'" style="max-width:100%;"><br><small>'+r.caption+'</small>';
+                if(r.type === 'video') return '<video controls src="'+r.data+'" style="max-width:100%;"></video><br><small>'+r.caption+'</small>';
+                if(r.type === 'link') return '🔗 <a href="'+r.data+'" target="_blank">'+(r.caption || 'Link')+'</a>';
+                return '';
+            }).join('');
+        };
+
+        // --- GRADEBOOK ENGINE ---
+        function renderGradebook() {
+            const rowContainer = document.getElementById("gradebookRows"); const headerContainer = document.getElementById("gradebookHeader");
+            rowContainer.innerHTML = "";
+
+            const activeLesson = window.appState.lessons.find(l => l.classId === window.appState.classId && l.term === window.appState.term && l.week === window.appState.week && l.lessonId === window.appState.lessonId);
+            const resetStats = () => {
+                document.getElementById("statClassSize").innerText = `0`; document.getElementById("statGradedProgress").innerText = `0 / 0`;
+                document.getElementById("statPlagiarism").innerText = `0 Flags`; document.getElementById("statAverage").innerText = `0.0%`;
+            };
+
+            if(!activeLesson) {
+                rowContainer.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">No lesson selected or configured for this week.</td></tr>`;
+                resetStats(); return;
+            }
+
+            const max = activeLesson.maxMarks || { engage: 0, explore: 10, elaborate: 15, evaluate: 10 };
+            const sec = activeLesson.sections || {};
+
+            let hHTML = `<tr><th>Student Name</th><th>Status</th>`;
+            if(max.engage > 0) hHTML += `<th class="score-col">${getSecName(sec.engage, 'ENGAGE')}<br><span class="max-label">max: ${max.engage}</span></th>`;
+            if(max.explore > 0) hHTML += `<th class="score-col">${getSecName(sec.explore, 'EXPLORE')}<br><span class="max-label">max: ${max.explore}</span></th>`;
+            if(max.elaborate > 0) hHTML += `<th class="score-col">${getSecName(sec.elaborate, 'ELAB')}<br><span class="max-label">max: ${max.elaborate}</span></th>`;
+            if(max.evaluate > 0) hHTML += `<th class="score-col">${getSecName(sec.evaluate, 'EVAL')}<br><span class="max-label">max: ${max.evaluate}</span></th>`;
+            const totMax = (max.engage||0) + (max.explore||0) + (max.elaborate||0) + (max.evaluate||0);
+            hHTML += `<th class="score-col" style="background:#f1f5f9;">Total<br><span class="max-label">max: ${totMax}</span></th></tr>`;
+            headerContainer.innerHTML = hHTML;
+
+            if(window.appState.roster.length === 0) {
+                rowContainer.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#64748b;">Configure Class Roster first.</td></tr>`;
+                resetStats(); return;
+            }
+
+            let gCount = 0; let sTot = 0; let tPlag = 0;
+            window.appState.roster.forEach(stuObj => {
+                const sName = typeof stuObj === 'object' ? stuObj.name : stuObj; const sEsis = typeof stuObj === 'object' ? stuObj.esis : null;
+                const sub = window.appState.submissions.find(s => {
+                    if(s.classId !== window.appState.classId || s.term !== window.appState.term || s.week !== window.appState.week || s.lessonId !== window.appState.lessonId) return false;
+                    return (sEsis && s.esis && s.esis !== "N/A") ? s.esis === sEsis : s.studentName.toLowerCase() === sName.toLowerCase();
+                });
+
+                let stHTML = `<span class="status-badge status-pending">Pending</span>`;
+                let sEng = "-", sExp = "-", sEla = "-", sEva = "-", sT = "-";
+
+                if (sub) {
+                    stHTML = `<span class="status-badge status-graded">Graded</span>`; gCount++;
+                    sEng = max.engage > 0 ? (sub.scores?.engage ?? 0) : "-"; sExp = max.explore > 0 ? (sub.scores?.explore ?? 0) : "-";
+                    sEla = max.elaborate > 0 ? (sub.scores?.elaborate ?? 0) : "-"; sEva = max.evaluate > 0 ? (sub.scores?.evaluate ?? 0) : "-";
+                    sT = sub.scores?.total ?? 0; sTot += parseFloat(sT);
+                    if(sub.plagiarismFlags > 0) tPlag++;
+                }
+
+                let rHTML = `<tr><td><div style="font-size:0.75rem; color:#94a3b8; font-weight:bold;">${sEsis||'N/A'}</div><b>${sName}</b></td><td>${stHTML}</td>`;
+                if(max.engage > 0) rHTML += `<td class="score-col">${sEng}</td>`; if(max.explore > 0) rHTML += `<td class="score-col">${sExp}</td>`;
+                if(max.elaborate > 0) rHTML += `<td class="score-col">${sEla}</td>`; if(max.evaluate > 0) rHTML += `<td class="score-col">${sEva}</td>`;
+                rHTML += `<td class="score-col" style="background:#f8fafc; font-weight:bold; color:${sub ? 'var(--primary)' : '#cbd5e1'};">${sT}</td></tr>`;
+                rowContainer.innerHTML += rHTML;
+            });
+
+            document.getElementById("statClassSize").innerText = `${window.appState.roster.length}`;
+            document.getElementById("statGradedProgress").innerText = `${gCount} / ${window.appState.roster.length}`;
+            document.getElementById("statPlagiarism").innerText = `${tPlag}`;
+            document.getElementById("statAverage").innerText = `${gCount > 0 ? ((sTot / (gCount * totMax)) * 100).toFixed(1) : 0}%`;
+        }
+
+        window.exportToCSV = function() {
+            const lessonsInTerm = window.appState.lessons.filter(l => l.classId === window.appState.classId && l.term === window.appState.term);
+            if(window.appState.roster.length === 0 || lessonsInTerm.length === 0) return alert("No gradebook matrix data exists to export.");
+
+            let csvContent = "data:text/csv;charset=utf-8,ESIS,Student Name";
+            lessonsInTerm.forEach(l => csvContent += `,W${l.week}-L${l.lessonId} (${l.title})`);
+            csvContent += "\r\n";
+
+            window.appState.roster.forEach(stuObj => {
+                const sName = typeof stuObj === 'object' ? stuObj.name : stuObj; const sEsis = typeof stuObj === 'object' ? stuObj.esis : "";
+                let row = `"${sEsis}","${sName}"`;
+                lessonsInTerm.forEach(l => {
+                    const sub = window.appState.submissions.find(s => s.classId === window.appState.classId && s.term === window.appState.term && s.week === l.week && s.lessonId === l.lessonId && ((sEsis && s.esis === sEsis) || s.studentName === sName));
+                    row += `,${sub ? sub.scores?.total : "-"}`;
+                });
+                csvContent += row + "\r\n";
+            });
+
+            const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", `Grade_${window.appState.classId}_Term${window.appState.term}_Matrix.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        // --- PROGRESSION ANALYTICS ---
+        let currentProgressStudent = null;
+        window.renderProgressionView = function() {
+            const listContainer = document.getElementById("studentListContainer"); listContainer.innerHTML = "";
+            if(window.appState.roster.length === 0) return listContainer.innerHTML = `<div style="font-size:0.85rem; padding:10px;">Add students in Class Manager.</div>`;
+
+            window.appState.roster.forEach(stuObj => {
+                const sName = typeof stuObj === 'object' ? stuObj.name : stuObj; const sEsis = typeof stuObj === 'object' ? stuObj.esis : null;
+                const item = document.createElement("div"); item.className = "student-list-item" + (currentProgressStudent === sEsis ? " active" : "");
+                item.innerHTML = `<div><b>${sName}</b><br><small style="color:#94a3b8">${sEsis || ''}</small></div>`;
+                item.onclick = () => { currentProgressStudent = sEsis || sName; window.renderProgressionView(); window.renderStudentAnalytics(stuObj); };
+                listContainer.appendChild(item);
+            });
+            if (currentProgressStudent) { const sObj = window.appState.roster.find(s => (typeof s === 'object' ? s.esis : s) === currentProgressStudent) || currentProgressStudent; window.renderStudentAnalytics(sObj); }
+        };
+
+        window.renderStudentAnalytics = function(stuObj) {
+            const sName = typeof stuObj === 'object' ? stuObj.name : stuObj; const sEsis = typeof stuObj === 'object' ? stuObj.esis : null;
+            document.getElementById("analyticsStudentName").innerText = sName + (sEsis ? ` (${sEsis})` : '');
+            const rowsContainer = document.getElementById("analyticsProgressRows"); rowsContainer.innerHTML = "";
+
+            const lessonsInTerm = window.appState.lessons.filter(l => l.classId === window.appState.classId && l.term === window.appState.term);
+            if(lessonsInTerm.length === 0) return rowsContainer.innerHTML = `<tr><td colspan="6" style="text-align:center;">No lesson plan configuration found in Term ${window.appState.term}.</td></tr>`;
+
+            let subCount = 0; let weakSt = { engage: 0, explore: 0, elaborate: 0, evaluate: 0 }; let actPh = { engage: 0, explore: 0, elaborate: 0, evaluate: 0 };
+
+            lessonsInTerm.forEach(l => {
+                const sub = window.appState.submissions.find(s => s.classId === window.appState.classId && s.term === window.appState.term && s.week === l.week && s.lessonId === l.lessonId && ((sEsis && s.esis === sEsis) || s.studentName === sName));
+                const max = l.maxMarks || { engage: 0, explore: 10, elaborate: 15, evaluate: 10 };
+                let stEng = "-", stExp = "-", stEla = "-", stEva = "-", stTot = "-";
+
+                if (sub) {
+                    subCount++; stEng = max.engage > 0 ? (sub.scores?.engage ?? 0) : "-"; stExp = max.explore > 0 ? (sub.scores?.explore ?? 0) : "-";
+                    stEla = max.elaborate > 0 ? (sub.scores?.elaborate ?? 0) : "-"; stEva = max.evaluate > 0 ? (sub.scores?.evaluate ?? 0) : "-";
+                    stTot = `${sub.scores?.total ?? 0} / ${(max.engage||0) + (max.explore||0) + (max.elaborate||0) + (max.evaluate||0)}`;
+                    if(max.engage > 0) { actPh.engage++; if(sub.scores.engage / max.engage < 0.6) weakSt.engage++; }
+                    if(max.explore > 0) { actPh.explore++; if(sub.scores.explore / max.explore < 0.6) weakSt.explore++; }
+                    if(max.elaborate > 0) { actPh.elaborate++; if(sub.scores.elaborate / max.elaborate < 0.6) weakSt.elaborate++; }
+                    if(max.evaluate > 0) { actPh.evaluate++; if(sub.scores.evaluate / max.evaluate < 0.6) weakSt.evaluate++; }
+                }
+                rowsContainer.innerHTML += `<tr><td><b>W${l.week} - L${l.lessonId}:</b> ${l.title}</td><td class="score-col">${stEng}</td><td class="score-col">${stExp}</td><td class="score-col">${stEla}</td><td class="score-col">${stEva}</td><td class="score-col" style="background:#f8fafc; font-weight:bold; color:var(--primary);">${stTot}</td></tr>`;
+            });
+
+            document.getElementById("analyticsParticipation").innerText = `${Math.round((subCount / lessonsInTerm.length) * 100)}%`;
+            let weakest = "None"; let maxWr = 0;
+            Object.keys(weakSt).forEach(p => { if(actPh[p] > 0) { const r = weakSt[p] / actPh[p]; if(r > maxWr && r > 0.3) { maxWr = r; weakest = p.toUpperCase(); } } });
+            const wB = document.getElementById("analyticsWeakestPhase"); wB.innerText = weakest; wB.style.color = weakest === "None" ? "var(--success)" : "var(--error)";
+            document.getElementById("analyticsOverallBrief").innerText = `Progress Analysis for Term ${window.appState.term}: Submitted ${subCount} out of ${lessonsInTerm.length} tasks.`;
+        };
+
+        // --- AUTO GRADER ENGINE ---
+        window.submissionDataMap = new Map();
+        window.submissionCounter = 0;
+        
+        const dropZone = document.getElementById('dropZone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+        dropZone.addEventListener('drop', e => window.handleFiles(e.dataTransfer.files));
+
+        window.handleFiles = function(files) {
+            Array.from(files).forEach(file => {
+                if (file.name.endsWith('.json')) {
+                    const reader = new FileReader();
+                    reader.onload = e => { try { window.renderGraderCard(JSON.parse(e.target.result)); } catch (err) { alert("JSON error in: " + file.name); } };
+                    reader.readAsText(file);
+                }
+            });
+        };
+
+        window.renderGraderCard = function(data) {
+            window.submissionCounter++; const cardId = 'sub-' + window.submissionCounter;
+            
+            // Check context mismatch
+            let warningHTML = "";
+            if(data.classId !== window.appState.classId || data.term !== window.appState.term || data.week !== window.appState.week || data.lessonId !== window.appState.lessonId) {
+                warningHTML = `<div style="background:var(--error); color:white; padding:5px 10px; font-weight:bold; font-size:0.8rem; text-align:center;">⚠️ MISMATCH! File is for Class ${data.classId}, T${data.term} W${data.week} L${data.lessonId}</div>`;
+            }
+
+            const eExp = data.answers?.explore || ""; const eEla = data.answers?.elaborate || data.answers?.elaborate_text || ""; const eEva = data.answers?.evaluate || "";
+            const exitTicket = data.answers?.exitTicket || "Not Answered";
+            
+            let exitColor = "#64748b";
+            if(exitTicket === "Mastered") exitColor = "var(--success)";
+            if(exitTicket === "Getting There") exitColor = "var(--warning)";
+            if(exitTicket === "Need Help") exitColor = "var(--primary)";
+
+            // Use active lesson config if exists, otherwise fallback to the JSON config
+            const activeLesson = window.appState.lessons.find(l => l.classId === window.appState.classId && l.term === window.appState.term && l.week === window.appState.week && l.lessonId === window.appState.lessonId);
+            const maxMarks = activeLesson ? activeLesson.maxMarks : (data.maxMarks || { engage:0, explore:10, elaborate:15, evaluate:10 });
+            const sections = activeLesson ? activeLesson.sections : (data.sections || {});
+
+            window.submissionDataMap.set(cardId, {
+                student: data.student || "Student", esis: data.esis || "", classId: data.classId || "Unassigned",
+                term: data.term || "1", week: data.week || "1", lessonId: data.lessonId || "L1", lesson: data.lesson || "Lesson",
+                maxMarks: maxMarks, sections: sections,
+                explore: eExp, elaborate: eEla, elaborateFile: data.answers?.elaborate_file || null, evaluate: eEva,
+                pastedExp: data.metadata?.pastedExploreChars || 0, totalExp: eExp.length || 1, 
+                pastedEla: data.metadata?.pastedElaborateChars || 0, totalEla: eEla.length || 1,
+                pastedEva: data.metadata?.pastedEvaluateChars || 0, totalEva: eEva.length || 1
+            });
+
+            const s = window.submissionDataMap.get(cardId);
+            const expPct = Math.min(100, Math.round((s.pastedExp / s.totalExp) * 100)); const elaPct = Math.min(100, Math.round((s.pastedEla / s.totalEla) * 100)); const evaPct = Math.min(100, Math.round((s.pastedEva / s.totalEva) * 100));
+            
+            let wHTML = `${warningHTML}<div class="student-work">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div><h3>${s.student} <span style="font-size:0.9rem; color:#666;">(${s.esis ? s.esis+' | ' : ''}${s.classId})</span></h3><p style="color:var(--primary); font-weight:600;">${s.lesson}</p></div>
+                    <span class="status-badge" style="background:${exitColor}15; color:${exitColor}; border:1px solid ${exitColor};">🎟️ ${exitTicket}</span>
+                </div>`;
+            
+            if (s.maxMarks.engage > 0) wHTML += `<div class="section-label">${getSecName(s.sections.engage, 'Engage')}</div><div class="answer-box">Viewed.</div>`;
+            if (s.maxMarks.explore > 0) wHTML += `<div class="section-label">${getSecName(s.sections.explore, 'Explore')} <small style="color:#666">(${expPct}% Pasted)</small></div><div class="answer-box">${s.explore}</div>`;
+            if (s.maxMarks.elaborate > 0) wHTML += `<div class="section-label">${getSecName(s.sections.elaborate, 'Elaborate')} <small style="color:#666">(${elaPct}% Pasted)</small></div><div class="answer-box">${s.elaborate}${s.elaborateFile ? '<img src="'+s.elaborateFile+'" class="evidence-img">' : ''}</div>`;
+            if (s.maxMarks.evaluate > 0) wHTML += `<div class="section-label">${getSecName(s.sections.evaluate, 'Evaluate')} <small style="color:#666">(${evaPct}% Pasted)</small></div><div class="answer-box">${s.evaluate}</div>`;
+            wHTML += `</div>`;
+
+            let scInputs = `<div style="display:flex; gap:15px; flex-wrap:wrap; justify-content:center; margin-bottom:10px;">`;
+            if (s.maxMarks.engage > 0) scInputs += `<div class="score-block"><small>${getSecName(s.sections.engage, 'ENG')} (/${s.maxMarks.engage})</small><input type="number" id="sc-eng-${cardId}" class="score-input-grade" max="${s.maxMarks.engage}"></div>`;
+            if (s.maxMarks.explore > 0) scInputs += `<div class="score-block"><small>${getSecName(s.sections.explore, 'EXP')} (/${s.maxMarks.explore})</small><input type="number" id="sc-exp-${cardId}" class="score-input-grade" max="${s.maxMarks.explore}"></div>`;
+            if (s.maxMarks.elaborate > 0) scInputs += `<div class="score-block"><small>${getSecName(s.sections.elaborate, 'ELA')} (/${s.maxMarks.elaborate})</small><input type="number" id="sc-ela-${cardId}" class="score-input-grade" max="${s.maxMarks.elaborate}"></div>`;
+            if (s.maxMarks.evaluate > 0) scInputs += `<div class="score-block"><small>${getSecName(s.sections.evaluate, 'EVA')} (/${s.maxMarks.evaluate})</small><input type="number" id="sc-eva-${cardId}" class="score-input-grade" max="${s.maxMarks.evaluate}"></div>`;
+            scInputs += `</div>`;
+
+            const pasteWarn = (expPct > 10 || elaPct > 10 || evaPct > 10) ? `<div style="margin-bottom:15px;"><span class="status-badge status-error" style="margin-left:0;">🚩 High Paste Detected</span></div>` : '';
+
+            const card = document.createElement('div'); card.className = 'submission-card'; card.id = `card-block-${cardId}`;
+            card.innerHTML = wHTML + `
+                <div class="grading-panel">
+                    ${pasteWarn}
+                    <button class="btn btn-primary" style="margin-bottom:15px; width:100%;" id="btn-ai-${cardId}" onclick="window.graderAI('${cardId}')">✨ Optional: AI Suggest Scores</button>
+                    <div id="ai-box-${cardId}" class="ai-feedback-box"></div>
+                    <div class="manual-grade-section">
+                        <p style="font-size:0.85rem; font-weight:bold; text-align:center; margin-bottom:5px;">Teacher Input</p>
+                        ${scInputs}
+                        <button class="btn" id="sync-${cardId}" onclick="window.graderSync('${cardId}')" style="background:var(--success); color:white; width:100%; margin-top:10px;">💾 Save & Sync to DB</button>
+                    </div>
+                </div>`;
+            document.getElementById('submissionsGrid').prepend(card);
+        };
+
+        window.graderAI = async function(cardId) {
+            const apiKey = localStorage.getItem('gemini_api_key'); if(!apiKey) return alert("Save API Key in settings bar first.");
+            const btn = document.getElementById('btn-ai-' + cardId); const box = document.getElementById('ai-box-' + cardId);
+            const d = window.submissionDataMap.get(cardId);
+            
+            btn.disabled = true; btn.innerText = "⏳ Grading..."; box.style.display = "block"; box.innerHTML = "<i>Analyzing...</i>";
+
+            const prompt = `Role: Expert STEM Educator. Grade strictly based on max marks. Deduct for high copy-pasting. 
+Student: ${d.student}
+Explore (${d.maxMarks.explore} marks): "${d.explore}" (${Math.min(100, Math.round((d.pastedExp / d.totalExp) * 100))}% pasted)
+Elaborate (${d.maxMarks.elaborate} marks): "${d.elaborate}" (${Math.min(100, Math.round((d.pastedEla / d.totalEla) * 100))}% pasted)
+Evaluate (${d.maxMarks.evaluate} marks): "${d.evaluate}" (${Math.min(100, Math.round((d.pastedEva / d.totalEva) * 100))}% pasted)
+Output ONLY raw JSON: { "feedbackHTML": "**Feedback:**...", "scores": { "engage":0, "explore":0, "elaborate":0, "evaluate":0 } }`;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+                });
+                const aiData = JSON.parse((await res.json()).candidates[0].content.parts[0].text);
+                box.innerHTML = aiData.feedbackHTML;
+                if(d.maxMarks.engage > 0) document.getElementById('sc-eng-' + cardId).value = aiData.scores.engage || 0;
+                if(d.maxMarks.explore > 0) document.getElementById('sc-exp-' + cardId).value = aiData.scores.explore || 0;
+                if(d.maxMarks.elaborate > 0) document.getElementById('sc-ela-' + cardId).value = aiData.scores.elaborate || 0;
+                if(d.maxMarks.evaluate > 0) document.getElementById('sc-eva-' + cardId).value = aiData.scores.evaluate || 0;
+                btn.innerText = "✅ AI Complete";
+            } catch (error) { box.innerHTML = '<span class="status-badge status-error">API Error</span>'; btn.disabled = false; btn.innerText = "🔄 Try Again"; }
+        };
+
+        window.graderSync = async function(cardId) {
+            const d = window.submissionDataMap.get(cardId); const btn = document.getElementById('sync-' + cardId);
+            btn.disabled = true; btn.innerText = "⏳ Syncing...";
+
+            const sEng = d.maxMarks.engage > 0 ? parseFloat(document.getElementById('sc-eng-' + cardId).value) || 0 : 0;
+            const sExp = d.maxMarks.explore > 0 ? parseFloat(document.getElementById('sc-exp-' + cardId).value) || 0 : 0;
+            const sEla = d.maxMarks.elaborate > 0 ? parseFloat(document.getElementById('sc-ela-' + cardId).value) || 0 : 0;
+            const sEva = d.maxMarks.evaluate > 0 ? parseFloat(document.getElementById('sc-eva-' + cardId).value) || 0 : 0;
+
+            try {
+                const targetClassId = d.classId; const targetTerm = d.term; const targetWeek = d.week; const targetLessonId = d.lessonId;
+                
+                await addDoc(collection(db, "users", window.currentUser.uid, "submissions"), {
+                    studentName: d.student, esis: d.esis, classId: targetClassId, term: targetTerm, week: targetWeek, lessonId: targetLessonId, lessonTitle: d.lesson,
+                    scores: { engage: sEng, explore: sExp, elaborate: sEla, evaluate: sEva, total: sEng+sExp+sEla+sEva },
+                    plagiarismFlags: (d.pastedExp > 20 || d.pastedEla > 20 || d.pastedEva > 20) ? 1 : 0, timestamp: serverTimestamp()
+                });
+                
+                btn.innerText = "✅ Synced to DB";
+                setTimeout(() => {
+                    const cardElement = document.getElementById(`card-block-${cardId}`);
+                    cardElement.style.opacity = "0";
+                    setTimeout(() => { cardElement.remove(); window.submissionDataMap.delete(cardId); }, 500);
+                }, 1500);
+
+            } catch(err) { console.error(err); btn.style.background = "var(--error)"; btn.innerText = "⚠️ Sync Failed"; btn.disabled = false; }
+        };
+    </script>
+</body>
+</html>

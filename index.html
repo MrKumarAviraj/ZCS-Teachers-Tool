@@ -819,9 +819,10 @@
                     <button type="button" class="type-btn active" onclick="window.setType(${id},'${section}','image', this)">Image</button>
                     <button type="button" class="type-btn" onclick="window.setType(${id},'${section}','video', this)">Video</button>
                     <button type="button" class="type-btn" onclick="window.setType(${id},'${section}','link', this)">Link</button>
+                    <button type="button" class="type-btn" onclick="window.setType(${id},'${section}','document', this)">File (PDF/PPT)</button>
                 </div>
                 <div id="input-cont-${id}"><input type="file" accept="image/*" onchange="window.handleBuilderFile(${id},'${section}',this)"></div>
-                <input type="text" class="form-input" placeholder="Caption" style="margin-top:5px; padding:5px;" onchange="window.updateCap(${id},'${section}',this.value)">
+                <input type="text" class="form-input" placeholder="Caption / File Name" style="margin-top:5px; padding:5px;" onchange="window.updateCap(${id},'${section}',this.value)">
                 <button type="button" class="btn-remove" onclick="window.removeRes('${section}',${id})">✕</button>`;
             container.appendChild(div);
         };
@@ -830,7 +831,13 @@
             const item = window.lessonResources[sec].find(r => r.id === id); item.type = type;
             const cont = document.getElementById(`input-cont-${id}`);
             btn.parentElement.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active');
-            cont.innerHTML = type === 'link' ? `<input type="text" class="form-input" placeholder="https://..." onchange="window.updateData(${id},'${sec}',this.value)">` : `<input type="file" accept="${type}/*" onchange="window.handleBuilderFile(${id},'${sec}',this)">`;
+            if (type === 'link') {
+                cont.innerHTML = `<input type="text" class="form-input" placeholder="https://..." onchange="window.updateData(${id},'${sec}',this.value)">`;
+            } else if (type === 'document') {
+                cont.innerHTML = `<input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" onchange="window.handleBuilderFile(${id},'${sec}',this)">`;
+            } else {
+                cont.innerHTML = `<input type="file" accept="${type}/*" onchange="window.handleBuilderFile(${id},'${sec}',this)">`;
+            }
         };
 
         window.handleBuilderFile = async function(id, sec, el) {
@@ -935,6 +942,7 @@ const output={student:name,esis:esis,classId:"${data.metadata.classId}",lesson:"
                 if(r.type === 'image') return '<img src="'+r.data+'" style="max-width:100%;"><br><small>'+r.caption+'</small>';
                 if(r.type === 'video') return '<video controls src="'+r.data+'" style="max-width:100%;"></video><br><small>'+r.caption+'</small>';
                 if(r.type === 'link') return '🔗 <a href="'+r.data+'" target="_blank">'+(r.caption || 'Link')+'</a>';
+                if(r.type === 'document') return '<div style="margin-top:10px; padding:10px 15px; background:#f0f9ff; border-radius:6px; border:1px solid #bae6fd; display:inline-block;"><span style="font-size:1.2rem; margin-right:8px;">📄</span><a href="'+r.data+'" download="'+(r.caption || 'Lesson_Resource')+'" target="_blank" style="color:#00a3e0; font-weight:bold; text-decoration:none;">'+(r.caption || 'Download Attached File')+'</a></div>';
                 return '';
             }).join('');
         };
